@@ -8,6 +8,7 @@ License: AGPLv3 or later
 License URI: http://www.gnu.org/licenses/agpl-3.0.html
 
 Display widgets for CiviCRM events: the next public event or a whole list. Embed widgets as shortcodes, too!
+Just a change.
 
 == Description ==
 
