@@ -1,16 +1,17 @@
 === CiviEvent Widget ===
-Contributors: agh1
+Contributors: Campaign/Cause-in-a-Box (CIB)
 Tags: civicrm, events, event, nonprofit, crm, calendar
-Requires at least: 3.3
-Tested up to: 4.9
-Stable tag: 3.2
+Requires at least: 5.0
+Tested up to: 6.9
 License: AGPLv3 or later
 License URI: http://www.gnu.org/licenses/agpl-3.0.html
 
-Display widgets for CiviCRM events: the next public event or a whole list. Embed widgets as shortcodes, too!
-Just a change.
+Display widgets for CiviCRM events: the next public event or a whole list.
+Embed widgets as shortcodes, too!
 
 == Description ==
+
+This plugin was initially written by "Andie" from AGHStrategies (https://aghstrategies.com/). It has not been updated for 7 years. We had to fix a few issues with the formatting/php and add another feature, so we cloned it.
 
 You can use the CiviEvent widget to add two types of widgets for upcoming public events from CiviCRM.  There's no limit to the number of widgets you can add of either type.  You can include the widgets in the sidebar like normal, or you can include them via shortcodes in the body of your posts.
 
@@ -26,26 +27,67 @@ This widget displays a single public event from CiviCRM.  By default, it will di
 
 Both widgets are available to be inserted into the body of a post using a shortcode.  Use the `[civievent_widget]` shortcode for the events listing and the `[civievent_single_widget]` shortcode for the single next (or offset) event.  The available parameters for the shortcodes are as follows:
 
-* **`title="Your Title"`** The widget title (default: "Upcoming Events" for the list widget, or the event's title for the single widget).
-* **`summary=1`** Display the event summary.  Omit the parameter or set it to 0 to hide the summary. *(List widget only.)*
-* **`limit=5`** Display the specified number of events (default: 5).  *(List widget only.)*
-* **`alllink=1`** Display "view all" with a link to the page with a full list of public events.  Omit the parameter or set it to 0 to hide the link.  *(List widget only.)*
-* **`wtheme="mytheme"`** The widget theme (a class added to the widget div).  Set a new one and handle it in your theme's CSS.  (Default for list widget: "stripe", with "divider" as an alternative.  Default for single widget: "standard".)
-* **`divider=" | "`** The location field delimiter (default: comma followed by a space).
-* **`city=1`** Display the event's city.  Omit the parameter or set it to 0 to hide the city.
-* **`state="abbreviate"`** Display the event's state/province.  Default is "none", which will display nothing about the state or province.  Display options are "abbreviate" for the state/province abbreviation or "full" for the full name.
-* **`country=1`** Display the event's country.  Omit the parameter or set it to 0 to hide the country.
-* **`offset=2`** Skip the given number of events before displaying the next one (default: 0).  *(Single widget only.)*
-* **`admin_type="simple"`** Whether to use the "simple" (default) or "custom" display options (as appear in the widget settings).  The `custom_display` and `custom_filter` parameters only function alongside `admin_type="custom"`.  The `summary`, `alllink`, `divider`, `city`, `state`, and `country` parameters only function when `admin_type="simple"` (or reverting to the default). *(List widget only.)*
-* **`custom_display='{"event_title_infolink":{"title":0,"prefix":null,"suffix":null,"wrapper":1},"description":{"title":1,"prefix":null,"suffix":null,"wrapper":1}}'`** Custom options for displaying results when `admin_type="custom"`. The value should be an object written in JSON. Each property name should be a field to display, and the property value should be an object with the following properties: `title` (1 or 0: whether to display the field name), `prefix` (`null` or a string with markup to precede the field), `suffix` (`null` or a string with markup to follow the field), and `wrapper` (1 or 0: whether to wrap the field with the default wrapper elements.  You may configure a widget using the standard widget interface, click "Show JSON", and copy the JSON into this parameter.  If `custom_display` is missing, the listing will revert to displaying in the "simple" mode despite the `admin_type` value.  *(List widget only.)*
-* **`custom_filter='{"start_date": {">=": "2015-12-16"}, "is_public": 1, "options": {"sort": "start_date ASC"}}'`** Custom options for filtering results when `admin_type="custom"`. The value should be an object written in JSON.  The object should be a valid set of parameters for the CiviCRM API.  The default is to list all public events starting on today's date or later, sorted by start date ascending.  *(List widget only.)*
-* **`event_type_id=3`** Display Event with event type id 3 (default: show all event).  *(only work with admin_type="simple".)*
-
-= Further Notes =
-
-This plugin requires CiviCRM 4.3 or higher to function.  It is only supported with CiviCRM 4.6 or higher.
-
-Read more at https://aghstrategies.com/civievent-widget
+- "title="Your Title""
+  The widget title (default: "Upcoming Events" for the list widget, or the event's title for the single widget).
+- "summary=1"
+  Display the event summary.  Omit the parameter or set it to 0 to hide the summary.
+  (List widget only.)
+- "limit=5"
+  Display the specified number of events (default: 5).
+  (List widget only.)*
+- "alllink=1"
+  Display "view all" with a link to the page with a full list of public events.  Omit the parameter or set it to 0 to hide the link.
+  (List widget only.)*
+- "wtheme="mytheme""
+   The widget theme (a class added to the widget div).
+   Set a new one and handle it in your theme's CSS.
+   (Default for list widget: "stripe", with "divider" as an alternative.  Default for single widget: "standard".)
+- "divider="
+   The location field delimiter (default: comma followed by a space).
+- "city=1"
+  Display the event's city.
+  Omit the parameter or set it to 0 to hide the city.
+- "state=abbreviate"
+  Display the event's state/province.
+  Default is "none", which will display nothing about the state or province.
+  Display options are "abbreviate" for the state/province abbreviation or "full" for the full name.
+- "country=1"
+  Display the event's country.
+  Omit the parameter or set it to 0 to hide the country.
+- "offset=2"
+  Skip the given number of events before displaying the next one (default: 0).
+  (Single widget only.)
+- "admin_type=simple"
+  Whether to use the "simple" (default) or "custom" display options (as appear in the widget settings).
+  The `custom_display` and `custom_filter` parameters only function alongside `admin_type="custom"`.
+  The `summary`, `alllink`, `divider`, `city`, `state`, and `country` parameters only function when `admin_type="simple"`
+  (or reverting to the default)
+  (List widget only.)*
+- "custom_display='{"event_title_infolink":{"title":0,"prefix":null,"suffix":null,"wrapper":1},"description":{"title":1,"prefix":null,"suffix":null,"wrapper":1}}'"
+  Custom options for displaying results when `admin_type="custom"`.
+  The value should be an object written in JSON.
+  Each property name should be a field to display, and the property value should be an object with the following properties:
+    `title` (1 or 0: whether to display the field name)
+    `prefix` (`null` or a string with markup to precede the field)
+    `suffix` (`null` or a string with markup to follow the field)
+    `wrapper` (1 or 0: whether to wrap the field with the default wrapper elements.
+  You may configure a widget using the standard widget interface, click "Show JSON", and copy the JSON into this parameter.
+  If `custom_display` is missing, the listing will revert to displaying in the "simple" mode despite the `admin_type` value.
+  (List widget only.)
+- "custom_filter='{"start_date": {">=": "2015-12-16"}, "is_public": 1, "options": {"sort": "start_date ASC"}}'"
+  Custom options for filtering results when `admin_type="custom"`.
+  The value should be an object written in JSON.
+  The object should be a valid set of parameters for the CiviCRM API.
+  The default is to list all public events starting on today's date or later, sorted by start date ascending.
+  (List widget only.)
+- "event_type_id=3"
+  (default: show all event).
+  Display Event with event type id 3 
+  (only work with admin_type="simple".)
+- "metatags=yes"
+  (default: yes).
+  add open graph information to the head of the HTML, including "meta name=description" and "meta property=og:XYZ"
+  (Single widget only.)
 
 == Installation ==
 
@@ -64,19 +106,9 @@ CiviCRM is the leading open-source constituent relationship management (CRM) sys
 
 CiviCRM provides full pages of info on single events, plus a poorly-documented page listing all public upcoming events, but there's no simple widget for listing the events in the WordPress sidebar or as a shortcode that doesn't overwhelm your page content.
 
-= Who's behind this? =
-
-This plugin was developed by AGH Strategies, a CiviCRM consulting firm in Washington, DC.  The plugin is driven by our clients' needs, and others have commissioned features that are important for their organizations.
-
-Read more about us at https://aghstrategies.com/
-
 = Why are my widget's links not working right? =
 
 Go into CiviCRM and visit the Manage Events page in the Events menu.  Check out the event links there--most likely they are identical to what the widget provides.  If the widget's links cause you trouble, you probably have fundamental problems with your CiviCRM installation: the widgets just use CiviCRM to provide links.
-
-= How can I sponsor a new feature? =
-
-Like most successful open-source projects, this is a collaboration between a number of users' needs.  If you have an idea for a feature and would like to see it happen, please contact us at https://aghstrategies.com/contact.  Even if your budget is small, we can often combine several use cases into a unified new feature, splitting the cost among several organizations.
 
 = What's all this about themes? =
 
@@ -90,15 +122,13 @@ You can also adjust the limit, sort, or offset by adding items under `options`. 
 
 **Note:** CiviCRM's API takes JSON arrays in some cases.  A JSON array is denoted by square brackets.  A shortcode is denoted by square brackets.  If you use the `custom_filter` shortcode parameter to set a custom API filter, you'll have trouble if you use square brackets for arrays.  As a workaround, write arrays as objects with sequentially numbered properties: `{"0": "First Thing", "1": "Second Thing"}` instead of `["First Thing","Second Thing"]`.
 
-== Screenshots ==
-
-1. An example of the CiviEvent List Widget.
-2. Widget administration for the CiviEvent List Widget in Simple mode.
-3. Widget administration for the CiviEvent List Widget in Custom mode.
-4. An example of the Single CiviEvent Widget.
-5. Widget administration for the Single CiviEvent Widget.
 
 == Changelog ==
+
+= 4.0 =
+* fixed version php 8.2X
+* fixed version wordpress 6.9
+* added "meta name=description" and some "meta property=og:"
 
 = 3.2 =
 * Fixed bug where events with no address would sometimes display the site's default address

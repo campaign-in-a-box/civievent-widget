@@ -4,41 +4,38 @@
   width: 100%;
 }
 
-.civievent-widget-divider .civievent-widget-event,
-.civievent-widget-stripe .civievent-widget-event {
+.civievent-widget-divider .civievent-widget-event-row,
+.civievent-widget-stripe .civievent-widget-event-row {
   display: table-row;
 }
 
-.civievent-widget-divider .civievent-widget-event-datetime,
-.civievent-widget-divider .civievent-widget-event-title {
+.civievent-widget-divider .civievent-widget-event-cell,
+.civievent-widget-stripe .civievent-widget-event-cell {
   border-top: solid #333333 1px;
-}
-
-.civievent-widget-divider .civievent-widget-event-0 .civievent-widget-event-datetime,
-.civievent-widget-divider .civievent-widget-event-0 .civievent-widget-event-title {
-  border-top: none;
-}
-
-.civievent-widget-stripe .civievent-widget-event-odd {
-  background: #cccccc;
-}
-
-.civievent-widget-stripe .civievent-widget-event-even {
-  background: #ffffff;
-}
-
-.civievent-widget-divider .civievent-widget-event-datetime,
-.civievent-widget-divider .civievent-widget-event-title {
-  display: table-cell;
+  display: table-cell!important;
   padding: 1ex 0;
   vertical-align: top;
 }
 
-.civievent-widget-stripe .civievent-widget-event-datetime,
-.civievent-widget-stripe .civievent-widget-event-title {
-  display: table-cell;
-  padding: 1ex;
-  vertical-align: top;
+.civievent-widget-divider .civievent-widget-event-cell-left,
+.civievent-widget-stripe .civievent-widget-event-cell-left {
+    width:20%;
+}
+.civievent-widget-divider .civievent-widget-event-cell-right,
+.civievent-widget-stripe .civievent-widget-event-cell-right {
+    width:79%;
+}
+
+.civievent-widget-divider .civievent-widget-event-0 .civievent-widget-event-cell {
+  border-top: none;
+}
+
+.civievent-widget-stripe .civievent-widget-event-odd {
+  background: #ddd;
+}
+
+.civievent-widget-stripe .civievent-widget-event-even {
+  background: #ffffff;
 }
 
 .civievent-widget-single-standard .civievent-widget-single-viewall,
@@ -76,8 +73,28 @@
 
 .civievent-widget-event-summary,
 .civievent-widget-single-summary {
+  margin-top:20px;
+  margin-bottom:20px;
   display: block;
 }
+
+.civievent-widget-spacer {
+  margin:0px;
+  clear:both;
+  padding:0;
+  height:20px;
+  width:100%;
+  display:block;
+}
+
+.civievent-widget-single-image {
+  margin-top:10px;
+  margin-bottom:10px;
+  display: block;
+  clear:both;
+  width:90%;
+  height:auto;
+`}
 
 .civievent-widget-stripe .civievent-widget-event-odd .civievent-widget-reglink a {
   background: #ffffff;
@@ -99,4 +116,51 @@
 .civievent-widget-single-location,
 .civievent-widget-location {
   display: block;
+}
+
+.civievent-widget-button-section {
+  width:100%;
+  margin:0;
+  padding:0;
+  text-align:left;
+  border:none;
+}
+
+.civievent-widget .button {
+  border:1px solid #ccc;
+  padding:15px;
+  margin-top:10px;
+  margin-bottom:10px;
+  color:#333;
+  background:#dedede;
+}
+.civievent-widget .button:hover {
+  border:1px solid #999;
+  padding:15px;
+  margin-top:10px;
+  margin-bottom:10px;
+  color:#333;
+  background:#efefef;
+}
+
+.civievent-widget-social {
+  border:1px solid #999;
+  padding:20px;
+  margin:0px;
+  margin:0px;
+  color:#333;
+  background:#eeeeee;
+}
+
+.civievent-widget-list .civievent-widget-event-item {
+  display:block;
+  width:100%;
+}
+.civievent-widget-list .civievent-widget-event-datetime {
+    width:18%;
+    backgrounf:blue;
+}
+.civievent-widget-list .civievent-widget-event-listing {
+    width:82%;
+    backgrounf:red;
 }
