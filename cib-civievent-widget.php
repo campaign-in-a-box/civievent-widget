@@ -19,7 +19,8 @@ if(!empty($_GET['eventID']) && $_GET['eventID']!="")
 }
 else
 {
-  add_action( 'widgets_init', function() {
+  add_action( 'widgets_init', function()
+  {
     register_widget( 'civievent_Widget' );
     //register_widget( 'civievent_single_Widget' );
     wp_register_style( 'civievent-widget-Stylesheet', plugins_url( 'cib-civievent-widget.css', __FILE__ ) );
@@ -229,15 +230,20 @@ class civievent_Widget extends WP_Widget
       // WIDGET CUSTOM
       // Get the custom display params.
 			$custom = json_decode( $instance['custom_display'], true );
-			foreach ( $custom as $name => $fieldAttrs ) {
+			foreach ( $custom as $name => $fieldAttrs )
+      {
 				// Make sure only legit fields are sent.
-				if ( empty( $fields[ $name ] ) ) {
+				if ( empty( $fields[ $name ] ) )
+        {
 					unset( $custom[ $name ] );
 				}
 			}
-			if ( empty( $custom ) ) {
+			if ( empty( $custom ) )
+      {
 				$standardDisplay = true;
-			} else {
+			}
+      else
+      {
 				// Get custom filters.
 				$customFilters = json_decode( CRM_Utils_Array::value( 'custom_filter', $instance, '' ), true );
 				$filterParams = array(
@@ -250,12 +256,18 @@ class civievent_Widget extends WP_Widget
 				);
 				$allCustomDisplayFields = self::getCustomDisplayTitles();
 				// Set filter params only if they're legit fields or options.
-				if ( is_array( $customFilters ) ) {
-					foreach ( $customFilters as $name => $val ) {
-						if ( 'custom' === $name ) {
-							foreach ( $val as $option => $optionVal ) {
-								if ( in_array( $option, $okOptions ) ) {
-									switch ( $option ) {
+				if ( is_array( $customFilters ) )
+        {
+					foreach ( $customFilters as $name => $val )
+          {
+						if ( 'custom' === $name )
+            {
+							foreach ( $val as $option => $optionVal )
+              {
+								if ( in_array( $option, $okOptions ) )
+                {
+									switch ( $option )
+                  {
 										case 'limit':
 										case 'offset':
 										case 'sort':
@@ -263,40 +275,53 @@ class civievent_Widget extends WP_Widget
 									}
 								}
 							}
-						} elseif ( array_key_exists( $name, $fields ) && ! array_key_exists( $name, $allCustomDisplayFields ) ) {
+						}
+            elseif ( array_key_exists( $name, $fields ) && ! array_key_exists( $name, $allCustomDisplayFields ) )
+            {
 							$filterParams[ $name ] = $val;
 						}
 					}
 				}
 				$fieldsToRetrieve = array_keys( $custom );
 				$customDisplayFields = array_intersect_key( $allCustomDisplayFields, $custom );
-				foreach ( $customDisplayFields as $customDisplayField => $dontcare ) {
+				foreach ( $customDisplayFields as $customDisplayField => $dontcare )
+        {
 					$fieldsToRetrieve = array_merge( $fieldsToRetrieve, self::getCustomDisplayField( $customDisplayField ) );
 				}
 				// Return fields should be based on the custom_display only.
 				$filterParams['return'] = array_unique( $fieldsToRetrieve );
-				try {
+				try
+        {
 					$eventsCustom = civicrm_api3( 'Event', 'get', $filterParams );
-					if ( ! empty( $eventsCustom['values'] ) ) {
+					if ( ! empty( $eventsCustom['values'] ) )
+          {
 						$content = '<div class="civievent-widget-list civievent-widget-custom-display">';
 						$index = 0;
-						foreach ( $eventsCustom['values'] as $eventId => $event ) {
+						foreach ( $eventsCustom['values'] as $eventId => $event )
+            {
 							$oe = ($index&1) ? 'odd' : 'even';
 							$content .= "<div class=\"civievent-widget-event civievent-widget-event-$oe civievent-widget-event-$index\">";
 							$index++;
-							foreach ( $custom as $name => $fieldAttrs ) {
-                
-								if ( empty( $event[ $name ] ) ) {
-									if ( array_key_exists( $name, $customDisplayFields ) ) {
+							foreach ( $custom as $name => $fieldAttrs )
+              {
+								if ( empty( $event[ $name ] ) )
+                {
+									if ( array_key_exists( $name, $customDisplayFields ) )
+                  {
 										$fieldVal = self::getCustomDisplayField( $name, $event );
-									} else {
+									}
+                  else
+                  {
 										continue;
 									}
-								} else {
+								}
+                else
+                {
 									$fieldVal = $event[ $name ];
 								}
 								$rowField = empty( $fieldAttrs['prefix'] ) ? '' : wp_filter_kses( $fieldAttrs['prefix'] );
-								if ( ! empty( $fieldAttrs['title'] ) ) {
+								if ( ! empty( $fieldAttrs['title'] ) )
+                {
 								 	$rowField .= empty( $fieldAttrs['wrapper'] ) ? "{$fields[ $name ]}: " : "<span class=\"civievent-widget-custom-label\">{$fields[ $name ]}: </span>";
 								}
 								$rowField .= empty( $fieldAttrs['wrapper'] ) ? $fieldVal : "<span class=\"civievent-widget-custom-value\">$fieldVal</span>";
@@ -308,11 +333,15 @@ class civievent_Widget extends WP_Widget
 							$content .= '</div>';
 						}
 						$content .= '</div>';
-					} else {
+					}
+          else
+          {
 						$content = '';
 					}
-				} catch (CiviCRM_API3_Exception $e) {
-					CRM_Core_Error::debug_log_message( $e->getMessage() );
+				}
+        catch (CiviCRM_API3_Exception $e)
+        {
+					CRM_Core_Error::debug_log_message( "cib-civievent-widget: ".$e->getMessage() );
 				}
 			}
 		}
@@ -320,15 +349,17 @@ class civievent_Widget extends WP_Widget
     {
       // WIDGET standard display
       // we need to get the ID of the cibapp_Image_Link
-      try {
+      try
+      {
         $customImage = civicrm_api3('custom_field', 'get', array(
           'label' => "cibapp_Image_Link",
         ));
       }
-      catch (CiviCRM_API3_Exception $e) {
+      catch (CiviCRM_API3_Exception $e)
+      {
         // we are not doping anything here, we just wont display the image, thats all.
         $error = $e->getMessage();
-        error_log("We cannot display the image -> ".print_r($error));
+        error_log("cib-civievent-widget: We cannot display the image -> ".print_r($error));
       }
 
       // this is awkward I have to say, there should be a better way to do this
@@ -338,7 +369,7 @@ class civievent_Widget extends WP_Widget
 			// Outputs the content of the widget.
 			// apply event type filter on standard output.
 			$event_type_id = empty( $instance['event_type_id'] ) ? null : intval( $instance['event_type_id'] );
-			$cal = CRM_Event_BAO_Event::getCompleteInfo( null, $event_type_id );
+			$cal = CRM_Event_BAO_Event::getCompleteInfo();
 			$index = 0;
 
       // start the content
@@ -347,9 +378,15 @@ class civievent_Widget extends WP_Widget
       // row collector
       $row="";
 
+      // any events?
+      $eventsFound=false;
+      
       // for each event
 			foreach ( $cal as $event )
       {
+        // yep, at least one event was found
+        $eventsFound=true;
+        
         // this is just to catch errors, we dont do anything with the error
         try
         {
@@ -359,10 +396,11 @@ class civievent_Widget extends WP_Widget
         }
         catch (CiviCRM_API3_Exception $e)
         {
-          // we are not doping anything here, we just wont display the image, thats all.
+          // we are not doing anything here, we just wont display the image, thats all.
           $error = $e->getMessage();
-          error_log("We are so fucked -> ".print_r($error, ));
+          error_log("cib-civievent-widget We are so fucked -> ".print_r($error, ));
         }
+        
         // get to the point
         $eventFULL=$eventFULL['values'][$event["event_id"]];
 
@@ -454,9 +492,20 @@ class civievent_Widget extends WP_Widget
           break;
         }
 			}
-      // add the rows to the content
-      $content .= $row;
 
+      if($eventsFound)
+      {
+        // add the rows to the content
+        $content .= $row;
+      }
+      else
+      {
+        // none found
+        $content .= "<div class='civievent-widget-event-row civievent-widget-event-0 civievent-widget-event-0'>";
+        $content .= "<h3>No Events Found</h3>";
+        $content .= "</div>";
+      }
+      
       // close the content division
 			$content .= "</div>\n";
 
@@ -470,7 +519,8 @@ class civievent_Widget extends WP_Widget
       
 			$classes = array();
 
-			if ( $instance['summary'] ) {
+			if ( $instance['summary'] )
+      {
 				$classes[] = 'civievent-widget-withsummary';
 			}
 
@@ -534,21 +584,26 @@ class civievent_Widget extends WP_Widget
 		);
 
 		// Look up event types
-		try {
+		try
+    {
 			$event_types = civicrm_api3( 'Event', 'getoptions', array(
 				'field' => 'event_type_id',
 				'context' => 'search',
 			));
-			if ( ! empty( $event_types['values'] ) ) {
+			if ( ! empty( $event_types['values'] ) )
+      {
 				$options += $event_types['values'];
 			}
-		} catch ( CiviCRM_API3_Exception $e ) {
+		}
+    catch ( CiviCRM_API3_Exception $e )
+    {
 			CRM_Core_Error::debug_log_message( $e->getMessage() );
 		}
 
 		// Render options from array of values
 		$rendered_options = '';
-		foreach ( $options as $id => $label ) {
+		foreach ( $options as $id => $label )
+    {
 			$selected = selected( $event_type_id, $id, false );
 			$rendered_options .= <<<HEREDOC
 			<option value="$id" $selected>$label</option>
