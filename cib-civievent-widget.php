@@ -7,14 +7,11 @@ Version: 4.0
 Author: Campaign in a Box
 Author URI: https://www.cibapp.net/
 */
-require(ABSPATH."/cib/php/debug.php");
 
 if(!empty($_GET['eventID']) && $_GET['eventID']!="")
 {
-  
   require_once 'cib-civievent-single-widget.php';
-  add_action( 'widgets_init', function()
-  {
+  add_action( 'widgets_init', function() {
     //register_widget( 'civievent_Widget' );
     register_widget( 'civievent_single_Widget' );
     wp_register_style( 'civievent-widget-Stylesheet', plugins_url( 'cib-civievent-widget.css', __FILE__ ) );
