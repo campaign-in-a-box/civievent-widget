@@ -33,13 +33,14 @@ function civievent_single_widget_shortcode( $atts )
   // again, please dont ask me.
   static $did_execute = false;
   static $src = "";
-  if ( $did_execute )
+  if($did_execute)
   {
     // Return the widget the second time around.
+    pinf($src, "ERROR: cib-civievent-single-widget.php: this is weird, cause I need to do this on prometheus.");
     return $src;
   }
   $did_execute = true;
-  
+
   // instance.
 	$widget = new civievent_single_Widget( true );
 	$defaults = $widget->_defaultWidgetParams;
@@ -64,8 +65,10 @@ function civievent_single_widget_shortcode( $atts )
 		}
 	}
 	$widgetAtts = array();
+
   // get the HTML from the output function
   $src = $widget->create_widget( $widgetAtts, $defaults );
+  return $src;
 }
 
 
