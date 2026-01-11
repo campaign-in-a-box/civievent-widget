@@ -36,7 +36,7 @@ function civievent_single_widget_shortcode( $atts )
   if($did_execute)
   {
     // Return the widget the second time around.
-    pinf($src, "ERROR: cib-civievent-single-widget.php: this is weird, cause I need to do this on prometheus.");
+    error_log("ERROR: cib-civievent-single-widget.php: this is weird, cause I need to do this on othe machines ... ".$src);
     return $src;
   }
   $did_execute = true;
@@ -318,14 +318,17 @@ class civievent_single_Widget extends civievent_Widget
     // make up the URL of THIS page
     global $civicrm_paths;
     $URL= $civicrm_paths['wp.frontend.base']['url']."/events/event-single/eventID=".$event['id'];
-    
-    $content .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
-    $content .= "<div class='civievent-widget-button-section'>";
-    $content .= " <a href='".$civicrm_paths['wp.frontend.base']['url']."/civicrm/event/register/?id=1&amp;reset=1' title='Register Now' class='button btn'>Register Now</a>";
-    $content .= " <a href='".$civicrm_paths['wp.frontend.base']['url']."/events/' title='See All Events' class='button btn'>See all events</a>";
-    $content .= "</div>";
-    $content .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
-    
+
+    // can only display the buttons if online rego is active
+    if( isset($event['is_online_registration']) && $event['is_online_registration']==1 )
+    {
+      $content .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
+      $content .= "<div class='civievent-widget-button-section'>";
+      $content .= " <a href='".$civicrm_paths['wp.frontend.base']['url']."/civicrm/event/register/?id=1&amp;reset=1' title='Register Now' class='button btn'>Register Now</a>";
+      $content .= " <a href='".$civicrm_paths['wp.frontend.base']['url']."/events/' title='See All Events' class='button btn'>See all events</a>";
+      $content .= "</div>";
+      $content .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
+    }
 
     // get rid of stuff in the summary so we can POST it
     $TXT=str_replace("\n"," ",$event['summary']);
