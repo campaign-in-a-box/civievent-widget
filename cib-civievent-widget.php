@@ -187,7 +187,12 @@ class civievent_Widget extends WP_Widget
     }
 		civicrm_initialize();
 
-		require_once 'CRM/Utils/System.php';
+		$crmSystemPath = stream_resolve_include_path( 'CRM/Utils/System.php' );
+		if ( ! $crmSystemPath ) {
+			// CiviCRM isn't available on the include_path; abort quietly.
+			return;
+		}
+		require_once $crmSystemPath;
 		$this->_civiversion = CRM_Utils_System::version();
 		$this->_civiBasePage = CRM_Core_BAO_Setting::getItem( CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'wpBasePage' );
 
