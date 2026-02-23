@@ -5,23 +5,31 @@
  *
  * @param array $atts The shortcode attributes provided
  * Available attributes include:
- *  - title string The widget title (default automatically fills
- *    with the event title),
- *  - wtheme string The widget theme (default: "standard"),
- *  - divider string The location field delimiter (default comma),
- *  - city bool 1 = display event city,
- *  - state string display event state/province:
- *   	'abbreviate' - abbreviation
- *   	'full' - full name
- *   	'none' (default) - display nothing
- *  - country bool 1 = display event country,
- *  - offset int The number of events to skip (default: 0).
- *  - event_type_id int filter to a single event type.
+ *  - title string
+ *    The widget title (default automatically fills with the event title),
+ *  - wtheme string 
+ *    The widget theme (default: "standard"),
+ *  - divider string 
+ *    The location field delimiter (default comma),
+ *  - city bool 
+ *    1 = display event city,
+ *  - state string 
+ *    display event state/province:
+ *   	 'abbreviate' - abbreviation
+ *   	 'full' - full name
+ *   	 'none' (default) - display nothing
+ *  - country bool 
+ *    1 = display event country,
+ *  - offset int 
+ *    The number of events to skip (default: 0).
+ *  - event_type_id int 
+ *    filter to a single event type.
  *
  * All booleans default to false; any value makes them true.
  *
  * @return string The widget to drop into the post body.
  */
+
 add_shortcode( 'civievent_single_widget', 'civievent_single_widget_shortcode' );
 function civievent_single_widget_shortcode( $atts )
 {
@@ -116,7 +124,6 @@ class civievent_single_Widget extends civievent_Widget
 	public $_defaultWidgetParams = array(
 		'title' => '',
 		'wtheme' => 'standard',
-		'alllink' => false,
 		'city' => false,
 		'state' => 'none',
 		'country' => false,
@@ -155,6 +162,9 @@ class civievent_single_Widget extends civievent_Widget
 	 */
 	public function create_widget( $args, $instance )
   {
+    // this needs to be global
+    global $civicrm_paths;
+    
     // no civicrm
 		if ( ! function_exists( 'civicrm_initialize' ) )
     {
@@ -265,24 +275,27 @@ class civievent_single_Widget extends civievent_Widget
     set_transient( "cib_civievent_single_event_".$_GET['eventID'] , $event , 5 );
     
     // this is the image URL
-    $daImage="";
+    $eventImage="";
 
     // now check whether the image is set.
     if(!empty($event[$customValue]) && $event[$customValue]!="")
     {
       // so the image is set, display it.
-      $daImage="<img src='".$event[$customValue]."' />";
+      $eventImage="<img src='".$event[$customValue]."' />";
     }
     
     // get the stuff for the links
-    $infoLink = CRM_Utils_System::url( 'civicrm/event/info', "reset=1&id={$event['id']}" );
+    // we dont want this link, this is CIVICRM's way
+    // $infoLink = CRM_Utils_System::url( 'civicrm/event/info', "reset=1&id={$event['id']}" );
+    // we want this, it points to OUR page.
+    $infoLink = $civicrm_paths['wp.frontend.base']['url']."events/event-single/?eventID=".$event['id'];
     
     // display title
     if(empty($instance['title']))
     {
       // SHORTCODE
       $title = apply_filters( 'widget_title', $event['title'] );
-      $title = "<a href='".$infoLink."'>" . apply_filters( 'widget_title', $event['title'] ) . '</a>';
+      $title = "<a href='".$infoLink."'>".apply_filters( 'widget_title', $event['title'] ) .'</a>';
       $content = '';
     }
     else
@@ -299,10 +312,10 @@ class civievent_single_Widget extends civievent_Widget
     }
     
     // append the image
-    if(!empty($daImage) && $daImage!="" )
+    if(!empty($eventImage) && $eventImage!="" )
     {
       $content .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
-      $content .= "<div class='civievent-widget-single-image'>".$daImage."</div>";
+      $content .= "<div class='civievent-widget-single-image'>".$eventImage."</div>";
     }
 
     // $content .= $this->dateFix( $event, 'civievent-widget-single' );
@@ -315,17 +328,13 @@ class civievent_single_Widget extends civievent_Widget
       $content .= "<div class='civievent-widget-single-summary'>{$event['description']}</div>";
     }
 
-    // make up the URL of THIS page
-    global $civicrm_paths;
-    $URL= $civicrm_paths['wp.frontend.base']['url']."/events/event-single/eventID=".$event['id'];
-
     // can only display the buttons if online rego is active
     if( isset($event['is_online_registration']) && $event['is_online_registration']==1 )
     {
       $content .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
       $content .= "<div class='civievent-widget-button-section'>";
-      $content .= " <a href='".$civicrm_paths['wp.frontend.base']['url']."/civicrm/event/register/?id=1&amp;reset=1' title='Register Now' class='button btn'>Register Now</a>";
-      $content .= " <a href='".$civicrm_paths['wp.frontend.base']['url']."/events/' title='See All Events' class='button btn'>See all events</a>";
+      $content .= " <a href='".$civicrm_paths['wp.frontend.base']['url']."civicrm/event/register/?id=".$event['id']."&amp;reset=1' title='Register Now' class='button btn'>Register Now</a>";
+      $content .= " <a href='".$civicrm_paths['wp.frontend.base']['url']."events/' title='See All Events' class='button btn'>See all events</a>";
       $content .= "</div>";
       $content .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
     }
@@ -340,23 +349,15 @@ class civievent_single_Widget extends civievent_Widget
     $content .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
     $content .= "<div class='civievent-widget-social' role='alert'>";
     $content .= " <h3>Help spread the word</h3>";
-    $content .= "  <p>Please help us and let your friends, colleagues and followers know about <strong><a href='events/event-single/?eventID=".$event['title']."'>".$event['title']."</a></strong></p>";
+    $content .= "  <p>Please help us and let your friends, colleagues and followers know about <strong><a href='/events/event-single/?eventID=".$event['id']."'>".$event['title']."</a></strong></p>";
     $content .= "  <div class='civievent-widget-button-section'>";
-    $content .= '   <button onclick="window.open(\'https://X.com/intent/tweet?url='.$URL.'&amp;text='.$TXT.'\',\'_blank\')" type="button" class="button btn btn-default" id="crm-tw" title="Share">Twitter</button>';
-    $content .= '   <button onclick="window.open(\'https://facebook.com/sharer/sharer.php?u='.$URL.'\',\'_blank\')" type="button" class="button btn btn-default" role="button" id="crm-fb" title="Share">Facebook</button>';
-    $content .= '   <button onclick="window.open(\'https://www.linkedin.com/shareArticle?mini=true&amp;url='.$URL.'&title='.$TXT.'\',\'_blank\')" type="button" rel="noopener" class="button btn btn-default" id="crm-li" title="Share">LinkedIn</button>';
-    $content .= '   <button onclick="window.open(\'mailto:?subject='.$event['title'].'&amp;body='.$TXT.'%0A'.$URL.'\',\'_self\')" type="button" rel="noopener" class="button btn btn-default" id="crm-email" title="Share">Email</button>';
+    $content .= '   <button onclick="window.open(\'https://X.com/intent/tweet?url='.$infoLink.'&amp;text='.$TXT.'\',\'_blank\')" type="button" class="button btn btn-default" id="crm-tw" title="Share">Twitter</button>';
+    $content .= '   <button onclick="window.open(\'https://facebook.com/sharer/sharer.php?u='.$infoLink.'\',\'_blank\')" type="button" class="button btn btn-default" role="button" id="crm-fb" title="Share">Facebook</button>';
+    $content .= '   <button onclick="window.open(\'https://www.linkedin.com/shareArticle?mini=true&amp;url='.$infoLink.'&title='.$TXT.'\',\'_blank\')" type="button" rel="noopener" class="button btn btn-default" id="crm-li" title="Share">LinkedIn</button>';
+    $content .= '   <button onclick="window.open(\'mailto:?subject='.$event['title'].'&amp;body='.$TXT.'%0A'.$infoLink.'\',\'_self\')" type="button" rel="noopener" class="button btn btn-default" id="crm-email" title="Share">Email</button>';
     $content .= "  <p>You can also share the below link in an email or on your website (right click on link, then use copy link):<br/>";
-    $content .= "  <a href='".$URL."'>".$URL."</a><br/>";
+    $content .= "  <a href='".$infoLink."'>".$infoLink."</a><br/>";
     $content .= "</div>";
-
-    // need to get this going.
-    // It's a FIX ME
-    if($instance['alllink'])
-    {
-      $viewall = CRM_Utils_System::url( 'civicrm/event/ical', 'reset=1&list=1&html=1' );
-      $content .= "<div class='civievent-widget-single-viewall'><a href='".$viewall."'>" . ts( 'View all' ) . '</a></div>';
-    }
 
     // classes
     $classes = array();
@@ -472,10 +473,6 @@ class civievent_single_Widget extends civievent_Widget
 		  <label for="<?php echo $this->get_field_id( 'divider' ); ?>"><?php _e( 'City, state, country divider:', 'civievent-widget' ); ?></label>
 		  <input class="widefat" id="<?php echo $this->get_field_id( 'divider' ); ?>" name="<?php echo $this->get_field_name( 'divider' ); ?>" type="text" value="<?php echo esc_attr( $divider ); ?>" />
 		  <?php _e( 'Enter the character(s) that should separate the city, state/province, and/or country when displayed.', 'civievent-widget' ); ?>
-		</p>
-		<p>
-      <input type="checkbox" <?php checked( $alllink ); ?> name="<?php echo $this->get_field_name( 'alllink' ); ?>" id="<?php echo $this->get_field_id( 'alllink' ); ?>" class="checkbox">
-		  <label for="<?php echo $this->get_field_id( 'alllink' ); ?>"><?php _e( 'Display "view all"?', 'civievent-widget' ); ?></label>
 		</p>
 		<?php
 	}
