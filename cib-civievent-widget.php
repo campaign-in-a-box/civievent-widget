@@ -197,6 +197,7 @@ class civievent_Widget extends WP_Widget
 		$this->_civiBasePage = CRM_Core_BAO_Setting::getItem( CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'wpBasePage' );
 
 		// Get date and time formats.
+    /* this is fucked.
 		$params = array( 'name' => 'date_format' );
 		$values = array();
 		CRM_Core_DAO::commonRetrieve( 'CRM_Core_DAO_PreferencesDate', $params, $values );
@@ -205,6 +206,9 @@ class civievent_Widget extends WP_Widget
 		$values = array();
 		CRM_Core_DAO::commonRetrieve( 'CRM_Core_DAO_PreferencesDate', $params, $values );
 		$this->_timeFormat = CRM_Utils_Array::value( 'time_format', $values, '%l:%M %p' );
+    */
+		$this->_dateFormat = get_option('date_format');
+		$this->_timeFormat = get_option('time_format');
 	}
 
 	/**
@@ -869,17 +873,34 @@ HEREDOC;
 	public function dateFix( $event, $classPrefix )
   {
 		$start = CRM_Utils_Array::value( 'start_date', $event );
+    $dateStart = explode(" ",$start);
 		$end = CRM_Utils_Array::value( 'end_date', $event );
+    $dateEnd = explode(" ",$end);
 		if($start)
     {
-			$date  = '<div class="' . $classPrefix . '-start-date">' . CRM_Utils_Date::customFormat( $start, $this->_dateFormat ) . '</div><br/>';
-			$date .= ' <div class="' . $classPrefix . '-start-time">' . CRM_Utils_Date::customFormat( $start, $this->_timeFormat ) . '</div>';
+      // org START date
+      $dateStartORG = new DateTime($start);
+      // Format the DateTime object into the new format
+      $dateStartNEW = $dateStartORG->format($this->_dateFormat);
+      // Format the DateTime object into the new format
+      $timeStartNEW = $dateStartORG->format($this->_timeFormat);
+			$date  = '<div class="' . $classPrefix . '-start-date">Start:<br/>'.$dateStartNEW.'</div>';
+			$date .= '&nbsp;<div class="' . $classPrefix . '-start-time">'.$timeStartNEW.'</div><br/><br/>';
 			if ( $end ) {
-				$date .= ' &ndash; ';
-				if ( CRM_Utils_Date::customFormat( $end, $this->_dateFormat ) !== CRM_Utils_Date::customFormat( $start, $this->_dateFormat ) ) {
-					$date .= ' <div class="' . $classPrefix . '-end-date">' . CRM_Utils_Date::customFormat( $end, $this->_dateFormat ) . '</div>';
-				}
-				$date .= ' <div class="' . $classPrefix . '-end-time">' . CRM_Utils_Date::customFormat( $end, $this->_timeFormat ) . '</div>';
+        // org END date
+        $dateEndORG = new DateTime($end);
+        // Format the DateTime object into the new format
+        $dateEndNEW = $dateEndORG->format($this->_dateFormat);
+        // Format the DateTime object into the new format
+        $timeEndNEW = $dateEndORG->format($this->_timeFormat);
+        // if the DATES are not the same, display BOTH DATES
+        // otherwise START DATE only.
+				if ( $dateStart[0] !== $dateEnd[0] ) {
+					$date .= '<div class="' . $classPrefix . '-start-date">End:</br>'.$dateEndNEW.'</div>';
+          $date .= ' <div class="' . $classPrefix . '-start-time">'.$timeEndNEW.'</div>';
+				} else {
+          $date .= ' <div class="' . $classPrefix . '-start-time">End:</br>'.$timeEndNEW.'</div>';
+        }
 			}
       return $date;
 		}
