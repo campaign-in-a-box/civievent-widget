@@ -3,10 +3,17 @@
 /*
 Plugin Name: CIB CiviEvent Widget
 Description: CIB CiviEvent Widget plugin displays public CiviCRM events in a widget.
-Version: 4.0
+Version: 4.2
 Author: Campaign in a Box
 Author URI: https://www.cibapp.net/
 */
+
+add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'cib_add_changelog_link' );
+function cib_add_changelog_link( $links )
+{
+  $links[] = '<a href="/wp-content/plugins/cib-civievent-widget/changelog.txt" target="_blank">Changelog</a>';
+  return $links;
+}
 
 if(!empty($_GET['eventID']) && $_GET['eventID']!="")
 {

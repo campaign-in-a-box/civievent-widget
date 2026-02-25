@@ -1,0 +1,59 @@
+=== CiviEvent Widget Changes ===
+
+= 4.2 =
+* added a different version number (I forgot last time)
+* split readme.txt into readme.txt and changelog.txt
+* added a link to the changelog.txt in the plugin list in the admin panel
+
+= 4.1 =
+* fixed incorrect event ID across a number of links
+
+= 4.0 =
+* created a github project page https://github.com/campaign-in-a-box/civievent-widget
+* fixed version php 8.2X
+* fixed version wordpress 6.9
+* added "meta name=description" and some "meta property=og:"
+
+= 3.2 =
+* Fixed bug where events with no address would sometimes display the site's default address
+* Added support for filtering by event type on both widgets and shortcodes
+
+= 3.1 =
+* Fixed bug where admin form tabs weren't displaying in Chrome.
+
+= 3.0 =
+* Made widgets render with default widget wrapper elements.
+* Added "custom" display type, with user-defined fields and filters.
+
+= 2.1 =
+* Fixed bug where shortcode echos content at the top rather than dropping it into place
+
+= 2.0 =
+* Both widgets are now available as shortcodes
+
+= 1.3 =
+* Cleanup for PHP strict notices
+* Compatibility for WordPress 4.3
+
+= 1.2 =
+* New single event widget for displaying the next upcoming event
+* Offset the single event widget to display the second or third upcoming event
+
+= 1.1 =
+* Suppress repetitive names for city, state, and/or country (e.g. Singapore, Singapore)
+* Wrapped all strings in translate functions
+* Option to set city, state, country divider
+
+= 1.0 =
+* Option to display City, State, and/or Country
+
+= 0.3 =
+* Solving some numbering confusion in the WP plugin directory
+
+= 0.2 =
+* New option for displaying event summary
+* Theme adjustments
+* Better handling if CiviCRM itself isn't enabled and installed
+
+= 0.1 =
+* Initial version
