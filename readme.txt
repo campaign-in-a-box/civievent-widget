@@ -23,9 +23,151 @@ This widget is a basic, flexible listing of upcoming events that are marked as p
 
 This widget displays a single public event from CiviCRM.  By default, it will display the first event from the current day or the future, or you can set an offset to skip one or more and display the second or third upcoming event.  You may display the location if "Show location" is enabled on the event.
 
-= Shortcodes =
+= Template Shortcodes =
 
-Both widgets are available to be inserted into the body of a post using a shortcode.  Use the `[civievent_widget]` shortcode for the events listing and the `[civievent_single_widget]` shortcode for the single next (or offset) event.  The available parameters for the shortcodes are as follows:
+Both shortcodes support a **template mode**: place your own HTML between the opening and closing tags and use [Smarty](https://smarty.net/) `{$event.*}` variables to insert event data.  No server-side files need to be edited.  Because the engine is CiviCRM's built-in Smarty instance, you can use the full Smarty syntax — `{if}`, `{foreach}`, custom modifiers, etc.
+
+**Available variables:**
+
+*Core fields*
+
+| Variable | Description |
+|---|---|
+| `{$event.id}` | Event ID |
+| `{$event.title}` | Event title (HTML-escaped) |
+| `{$event.summary}` | Event summary (HTML allowed) |
+| `{$event.description}` | Full event description (HTML allowed) |
+| `{$event.register_url}` | URL of the online registration page |
+| `{$event.registration_link_text}` | Registration button label from CiviCRM |
+| `{$event.image}` | Image URL (empty if no image set) |
+| `{$event.image_tag}` | Ready-to-use `<img>` tag (empty if no image) |
+| `{$event.date_start}` | Formatted start date |
+| `{$event.time_start}` | Formatted start time |
+| `{$event.date_end}` | Formatted end date (blank when same day as start) |
+| `{$event.time_end}` | Formatted end time |
+| `{$event.index}` | 0-based position in the list (list widget only) |
+| `{$event.class}` | `"even"` or `"odd"` (list widget only) |
+| `{$event.register_buttons}` | Register + Read More buttons, respecting registration open/close dates; empty if registration is closed or not enabled |
+
+*Calendar links*
+
+| Variable | Description |
+|---|---|
+| `{$event.ical_url}` | iCal / .ics download URL |
+| `{$event.gcal_url}` | Google Calendar "add event" URL (includes location when available) |
+| `{$event.calendar_links}` | Pre-built iCal + Google Calendar buttons |
+
+*Social sharing*
+
+| Variable | Description |
+|---|---|
+| `{$event.share_twitter}` | X / Twitter share link |
+| `{$event.share_facebook}` | Facebook share link |
+| `{$event.share_linkedin}` | LinkedIn share link |
+| `{$event.share_email}` | Email share link |
+| `{$event.social_links}` | Pre-built row with all four share links |
+
+*Location & map* — only populated when the event has "Show location" enabled in CiviCRM
+
+| Variable | Description |
+|---|---|
+| `{$event.location_address}` | Street address |
+| `{$event.location_city}` | City |
+| `{$event.location_state}` | State / province abbreviation |
+| `{$event.location_country}` | Country name |
+| `{$event.location_postal}` | Postal / zip code |
+| `{$event.location_full}` | Full address on one line |
+| `{$event.map_url}` | Google Maps search URL |
+| `{$event.map_link}` | Pre-built link to Google Maps |
+
+**Event list — card layout (works great in Elementor / Astra):**
+
+Paste this into an Elementor Shortcode widget.  The template uses `var(--ast-global-color-0)` so it automatically picks up your Astra primary colour; the fallback `#4169e1` keeps it sensible on any other theme.
+
+```
+[civievent_widget url="/event/event-single/"]
+<div style="background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);overflow:hidden;margin-bottom:24px;display:flex;flex-wrap:wrap;">
+  <div style="flex:0 0 200px;min-height:150px;background:#e8e8e8;overflow:hidden;">
+    <a href="{$event.url}" style="display:block;height:100%;">{$event.image_tag}</a>
+  </div>
+  <div style="flex:1;min-width:220px;padding:20px 24px;display:flex;flex-direction:column;gap:12px;">
+    <div>
+      <p style="margin:0 0 4px;font-size:.78em;font-weight:700;color:var(--ast-global-color-0,#4169e1);text-transform:uppercase;letter-spacing:.06em;">
+        {$event.date_start} &bull; {$event.time_start}
+        {if $event.time_end}
+          - {$event.time_end}
+        {/if}
+      </p>
+      <h3 style="margin:0 0 6px;font-size:1.1em;line-height:1.3;">
+        <a href="{$event.url}" style="color:#1a1a1a;text-decoration:none;">{$event.title}</a>
+      </h3>
+      {if $event.location_full}<p style="margin:0 0 4px;font-size:.88em;color:#666;">{$event.location_full}</p>{/if}
+      {if $event.summary}<p style="margin:0;font-size:.9em;color:#555;line-height:1.55;">{$event.summary}</p>{/if}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      {if $event.register_url}<a href="{$event.register_url}" style="display:inline-block;padding:8px 20px;background:var(--ast-global-color-0,#4169e1);color:#fff;border-radius:6px;text-decoration:none;font-size:.85em;font-weight:600;">{$event.registration_link_text}</a>{/if}
+      <a href="{$event.url}" style="display:inline-block;padding:8px 20px;border:1.5px solid var(--ast-global-color-0,#4169e1);color:var(--ast-global-color-0,#4169e1);border-radius:6px;text-decoration:none;font-size:.85em;font-weight:600;">More info</a>
+      {$event.map_link}
+      {$event.calendar_links}
+    </div>
+  </div>
+</div>
+[/civievent_widget]
+```
+
+**Single event hero (works great in Elementor / Astra):**
+
+Paste this into an Elementor Shortcode widget on your event detail page.
+
+```
+[civievent_single_widget url="/event/event-single/"]
+<div style="border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 4px 28px rgba(0,0,0,.1);">
+  {if $event.image_tag}
+  <div style="position:relative;height:280px;overflow:hidden;background:#ddd;">
+    <a href="{$event.url}" style="display:block;height:100%;">{$event.image_tag}</a>
+    <div style="position:absolute;top:16px;left:16px;background:var(--ast-global-color-0,#4169e1);color:#fff;padding:7px 16px;border-radius:30px;font-size:.82em;font-weight:700;letter-spacing:.03em;">
+      {$event.date_start} &bull; {$event.time_start}
+      {if $event.time_end}
+        - {$event.time_end}
+      {/if}
+    </div>
+  </div>
+  {/if}
+  <div style="padding:28px 32px;display:flex;flex-direction:column;gap:20px;">
+    <div>
+      <h2 style="margin:0 0 6px;font-size:1.7em;line-height:1.25;">
+        <a href="{$event.url}" style="color:#1a1a1a;text-decoration:none;">{$event.title}</a>
+      </h2>
+      <p style="margin:0 0 10px;font-size:.88em;color:var(--ast-global-color-0,#4169e1);font-weight:600;">
+        {$event.date_start} &bull; {$event.time_start}{if $event.date_end} &mdash; {$event.date_end} {$event.time_end}{/if}
+      </p>
+      {if $event.location_full}<p style="margin:0 0 6px;font-size:.9em;color:#555;">{$event.location_full}</p>{/if}
+      {if $event.summary}<p style="margin:0 0 10px;color:#555;font-size:1em;line-height:1.65;">{$event.summary}</p>{/if}
+      {if $event.description}<p style="margin:0;color:#555;font-size:1em;line-height:1.65;">{$event.description}</p>{/if}
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      {if $event.register_url}<a href="{$event.register_url}" style="display:inline-block;padding:12px 28px;background:var(--ast-global-color-0,#4169e1);color:#fff;border-radius:8px;text-decoration:none;font-size:.95em;font-weight:700;">{$event.registration_link_text}</a>{/if}
+      <a href="/events/" style="display:inline-block;padding:12px 28px;border:2px solid var(--ast-global-color-0,#4169e1);color:var(--ast-global-color-0,#4169e1);border-radius:8px;text-decoration:none;font-size:.95em;font-weight:700;">See all events</a>
+      {$event.map_link}
+    </div>
+    <div>
+      <p style="margin:0 0 8px;font-size:.85em;font-weight:600;color:#555;">Add to calendar:</p>
+      {$event.calendar_links}
+    </div>
+    <div>
+      <p style="margin:0 0 8px;font-size:.85em;font-weight:600;color:#555;">Share this event:</p>
+      {$event.social_links}
+    </div>
+  </div>
+</div>
+[/civievent_single_widget]
+```
+
+When no inner template is provided the widgets use a built-in default template that reproduces the original layout.
+
+= Shortcodes (built-in layout) =
+
+Both widgets are also available without a template.  Use the `[civievent_widget]` shortcode for the events listing and the `[civievent_single_widget]` shortcode for the single next (or offset) event.  The available parameters are as follows:
 
 - "title="Your Title""
   The widget title (default: "Upcoming Events" for the list widget, or the event's title for the single widget).

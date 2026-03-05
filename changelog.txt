@@ -1,5 +1,25 @@
 === CiviEvent Widget Changes ===
 
+= 4.4 =
+* Template engine upgraded from simple token substitution to CiviCRM's built-in Smarty instance (CRM_Core_Smarty); templates now use `{$event.title}` Smarty variable syntax
+* Full Smarty syntax available in templates: `{if}`, `{foreach}`, modifiers, etc.
+* Merged shortcode rendering into a single code path: shortcodes now always use the template engine, with built-in default templates that reproduce the previous "simple" layout; `widget()` and `create_widget()` sidebar widget methods are unchanged
+* New layout-helper variables: `{$event.date_block}`, `{$event.register_buttons}`
+* Single widget shortcode: added `metatags=no` attribute, `wtheme` CSS class on wrapper
+* List widget shortcode: added `wtheme` and `title` attribute handling on wrapper
+* readme examples updated to demonstrate `{if $event.location_full}` conditional usage
+
+= 4.3 =
+* readme examples updated to show map, calendar, and social links in both widgets
+* Template engine: [civievent_widget]...[/civievent_widget] and [civievent_single_widget]...[/civievent_single_widget] now accept inner HTML templates with {event.*} tokens — no server edits needed to customise the layout
+* Bug fix: $return undefined in locationInfo() caused PHP warnings on events with no address
+* Bug fix: $okOptions undefined in custom-filter code path made that branch a fatal error
+* Bug fix: regFix() was silently discarding the spacer div above the button row (= overwriting $reg instead of appending)
+* Bug fix: error_log() spam on every page load from the double-execution workaround in civievent_single_widget_shortcode
+* Security: esc_url() on image URLs in both widgets
+* Security: esc_attr() on og:image, og:description, and description meta tag values
+* Security: esc_js() on event data embedded in social-share onclick handlers
+
 = 4.2 =
 * added a different version number (I forgot last time)
 * split readme.txt into readme.txt and changelog.txt
