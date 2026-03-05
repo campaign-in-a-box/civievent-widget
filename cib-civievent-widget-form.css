@@ -6,15 +6,15 @@
   display: inline-block;
   border: solid 3px #444;
   background: #fff;
-  padding: .5em 1em;
-  margin: 0 .5em .5em 0;
+  padding: 0.5em 1em;
+  margin: 0 0.5em 0.5em 0;
 }
 
 .civievent-widget-admin-simple,
 .civievent-widget-admin-custom {
   display: none;
   background: #f1f1f1;
-  padding: .5em .5em 0;
+  padding: 0.5em 0.5em 0;
   border: solid 3px #0073aa;
   margin: 0 0 1em;
 }
@@ -36,7 +36,7 @@
 .civievent-widget-admin-type-label {
   background: #aaa;
   color: #fff;
-  padding: .5em;
+  padding: 0.5em;
   display: inline-block;
 }
 

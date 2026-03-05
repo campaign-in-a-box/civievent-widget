@@ -1,91 +1,98 @@
 .civievent-widget-divider .civievent-widget-list,
 .civievent-widget-stripe .civievent-widget-list {
- display: table;
- width: 100%;
+  display: table;
+  width: 100%;
 }
 .civievent-widget-divider .civievent-widget-event-row,
 .civievent-widget-stripe .civievent-widget-event-row {
- display: table-row;
+  display: table-row;
 }
 .civievent-widget-divider .civievent-widget-event-cell,
 .civievent-widget-stripe .civievent-widget-event-cell {
- border-top: solid #333333 1px;
- display: table-cell!important;
- padding: 1ex 0;
- vertical-align: top;
+  border-top: solid #333333 1px;
+  display: table-cell !important;
+  padding: 1ex 0;
+  vertical-align: top;
 }
 .civievent-widget-divider .civievent-widget-event-cell-left,
 .civievent-widget-stripe .civievent-widget-event-cell-left {
- width:20%;
- padding-left:5px;
- padding-right:5px;
+  width: 20%;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 .civievent-widget-divider .civievent-widget-event-cell-right,
 .civievent-widget-stripe .civievent-widget-event-cell-right {
- width:79%;
+  width: 79%;
 }
-.civievent-widget-divider .civievent-widget-event-0 .civievent-widget-event-cell {
- border-top: none;
+.civievent-widget-divider
+  .civievent-widget-event-0
+  .civievent-widget-event-cell {
+  border-top: none;
 }
 .civievent-widget-stripe .civievent-widget-event-odd {
- background: #ddd;
+  background: #ddd;
 }
 .civievent-widget-stripe .civievent-widget-event-even {
- background: #ffffff;
+  background: #ffffff;
 }
 .civievent-widget-single-standard .civievent-widget-single-viewall,
 .civievent-widget-divider .civievent-widget-viewall,
 .civievent-widget-stripe .civievent-widget-viewall {
- text-align: right;
+  text-align: right;
 }
 .civievent-widget-stripe .civievent-widget-viewall {
- padding: 1ex;
+  padding: 1ex;
 }
 .civievent-widget-single-standard .civievent-widget-single-reglink,
 .civievent-widget-divider .civievent-widget-reglink,
 .civievent-widget-stripe .civievent-widget-reglink {
- display: block;
- padding: .5em 0 0;
+  display: block;
+  padding: 0.5em 0 0;
 }
 .civievent-widget-single-standard .civievent-widget-single-reglink a,
 .civievent-widget-divider .civievent-widget-reglink a,
 .civievent-widget-stripe .civievent-widget-reglink a {
- display: inline-block;
- color: #ffffff;
- background: #aaa;
- padding: 0.5ex 0.5em;
+  display: inline-block;
+  color: #ffffff;
+  background: #aaa;
+  padding: 0.5ex 0.5em;
 }
-.civievent-widget-divider.civievent-widget-withsummary .civievent-widget-infolink,
-.civievent-widget-divider.civievent-widget-withsummary .civievent-widget-reglink {
- display: inline-block;
- vertical-align: top;
- width: 50%;
+.civievent-widget-divider.civievent-widget-withsummary
+  .civievent-widget-infolink,
+.civievent-widget-divider.civievent-widget-withsummary
+  .civievent-widget-reglink {
+  display: inline-block;
+  vertical-align: top;
+  width: 50%;
 }
 .civievent-widget-event-summary,
 .civievent-widget-single-summary {
- margin-top:20px;
- margin-bottom:20px;
- display: block;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  display: block;
 }
 .civievent-widget-spacer {
- margin:0px;
- clear:both;
- padding:0;
- height:20px;
- width:100%;
- display:block;
+  margin: 0px;
+  clear: both;
+  padding: 0;
+  height: 20px;
+  width: 100%;
+  display: block;
 }
 .civievent-widget-single-image {
- margin-top:10px;
- margin-bottom:10px;
- display: block;
- clear:both;
- width:90%;
- height:auto;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: block;
+  clear: both;
+  width: 90%;
+  height: auto;
 }
-.civievent-widget-stripe .civievent-widget-event-odd .civievent-widget-reglink a {
- background: #ffffff;
- color: #888;
+.civievent-widget-stripe
+  .civievent-widget-event-odd
+  .civievent-widget-reglink
+  a {
+  background: #ffffff;
+  color: #888;
 }
 .civievent-widget-divider .civievent-widget-event-start-date,
 .civievent-widget-divider .civievent-widget-event-start-time,
@@ -95,51 +102,51 @@
 .civievent-widget-stripe .civievent-widget-event-start-time,
 .civievent-widget-stripe .civievent-widget-event-end-date,
 .civievent-widget-stripe .civievent-widget-event-end-time {
- display: inline-block;
+  display: inline-block;
 }
 .civievent-widget-single-datetime,
 .civievent-widget-single-location,
 .civievent-widget-location {
- display: block;
+  display: block;
 }
 .civievent-widget-button-section {
- width:100%;
- margin:0;
- padding:0;
- text-align:left;
- border:none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  border: none;
 }
 .civievent-widget .button {
- border:1px solid #ccc;
- padding:15px;
- margin-top:10px;
- margin-bottom:10px;
- color:#333;
- background:#dedede;
+  border: 1px solid #ccc;
+  padding: 15px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  color: #333;
+  background: #dedede;
 }
 .civievent-widget .button:hover {
- border:1px solid #999;
- padding:15px;
- margin-top:10px;
- margin-bottom:10px;
- color:#333;
- background:#efefef;
+  border: 1px solid #999;
+  padding: 15px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  color: #333;
+  background: #efefef;
 }
 .civievent-widget-social {
- border:1px solid #999;
- padding:20px;
- margin:0px;
- margin:0px;
- color:#333;
- background:#eeeeee;
+  border: 1px solid #999;
+  padding: 20px;
+  margin: 0px;
+  margin: 0px;
+  color: #333;
+  background: #eeeeee;
 }
 .civievent-widget-list .civievent-widget-event-item {
- display:block;
- width:100%;
+  display: block;
+  width: 100%;
 }
 .civievent-widget-list .civievent-widget-event-datetime {
- width:18%;
+  width: 18%;
 }
 .civievent-widget-list .civievent-widget-event-listing {
- width:82%;
+  width: 82%;
 }
