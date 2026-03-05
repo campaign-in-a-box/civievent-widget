@@ -82,7 +82,7 @@ Both widgets are available to be inserted into the body of a post using a shortc
   (List widget only.)
 - "event_type_id=3"
   (default: show all event).
-  Display Event with event type id 3 
+  Display Event with event type id 3
   (only work with admin_type="simple".)
 - "metatags=yes"
   (default: yes).

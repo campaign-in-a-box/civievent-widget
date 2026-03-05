@@ -8,29 +8,25 @@ Author: Campaign in a Box
 Author URI: https://www.cibapp.net/
 */
 
-add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'cib_add_changelog_link' );
-function cib_add_changelog_link( $links )
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'cib_add_changelog_link');
+function cib_add_changelog_link($links)
 {
   $links[] = '<a href="/wp-content/plugins/cib-civievent-widget/changelog.txt" target="_blank">Changelog</a>';
   return $links;
 }
 
-if(!empty($_GET['eventID']) && $_GET['eventID']!="")
-{
+if (!empty($_GET['eventID']) && $_GET['eventID'] != '') {
   require_once 'cib-civievent-single-widget.php';
-  add_action( 'widgets_init', function() {
+  add_action('widgets_init', function () {
     //register_widget( 'civievent_Widget' );
-    register_widget( 'civievent_single_Widget' );
-    wp_register_style( 'civievent-widget-Stylesheet', plugins_url( 'cib-civievent-widget.css', __FILE__ ) );
+    register_widget('civievent_single_Widget');
+    wp_register_style('civievent-widget-Stylesheet', plugins_url('cib-civievent-widget.css', __FILE__));
   });
-}
-else
-{
-  add_action( 'widgets_init', function()
-  {
-    register_widget( 'civievent_Widget' );
+} else {
+  add_action('widgets_init', function () {
+    register_widget('civievent_Widget');
     //register_widget( 'civievent_single_Widget' );
-    wp_register_style( 'civievent-widget-Stylesheet', plugins_url( 'cib-civievent-widget.css', __FILE__ ) );
+    wp_register_style('civievent-widget-Stylesheet', plugins_url('cib-civievent-widget.css', __FILE__));
   });
 }
 
@@ -62,33 +58,28 @@ else
  *
  * @return string The widget to drop into the post body.
  */
-add_shortcode( 'civievent_widget', 'civievent_widget_shortcode' );
-function civievent_widget_shortcode( $atts )
+add_shortcode('civievent_widget', 'civievent_widget_shortcode');
+function civievent_widget_shortcode($atts)
 {
-	$widget = new civievent_Widget( true );
-	$defaults = $widget->_defaultWidgetParams;
+  $widget = new civievent_Widget(true);
+  $defaults = $widget->_defaultWidgetParams;
 
-	// Taking care of those who take things literally.
-	if ( is_array( $atts ) )
-  {
-		foreach ( $atts as $k => $v )
-    {
-			if ( 'false' === $v )
-      {
-				$atts[ $k ] = false;
-			}
-		}
-	}
+  // Taking care of those who take things literally.
+  if (is_array($atts)) {
+    foreach ($atts as $k => $v) {
+      if ('false' === $v) {
+        $atts[$k] = false;
+      }
+    }
+  }
 
-	foreach ( $defaults as $param => $default )
-  {
-		if ( ! empty( $atts[ $param ] ) )
-    {
-			$defaults[ $param ] = ( false === $default ) ? true : $atts[ $param ];
-		}
-	}
-	$widgetAtts = array();
-	return $widget->widget( $widgetAtts, $defaults );
+  foreach ($defaults as $param => $default) {
+    if (!empty($atts[$param])) {
+      $defaults[$param] = false === $default ? true : $atts[$param];
+    }
+  }
+  $widgetAtts = [];
+  return $widget->widget($widgetAtts, $defaults);
 }
 
 /**
@@ -96,114 +87,111 @@ function civievent_widget_shortcode( $atts )
  */
 class civievent_Widget extends WP_Widget
 {
+  /**
+   * Version of CiviCRM (to warn those with old versions).
+   *
+   * @var string $_civiversion Version of CiviCRM
+   */
+  protected $_civiversion = null;
 
-	/**
-	 * Version of CiviCRM (to warn those with old versions).
-	 *
-	 * @var string $_civiversion Version of CiviCRM
-	 */
-	protected $_civiversion = null;
+  /**
+   * CiviCRM basepage for Wordpress
+   *
+   * @var string $_civiBasePage Path of base page
+   */
+  protected $_civiBasePage = null;
 
-	/**
-	 * CiviCRM basepage for Wordpress
-	 *
-	 * @var string $_civiBasePage Path of base page
-	 */
-	protected $_civiBasePage = null;
+  /**
+   * CiviCRM date format
+   *
+   * @var string $_dateFormat Date format
+   */
+  protected $_dateFormat = null;
 
-	/**
-	 * CiviCRM date format
-	 *
-	 * @var string $_dateFormat Date format
-	 */
-	protected $_dateFormat = null;
+  /**
+   * CiviCRM time format
+   *
+   * @var string $_timeFormat Date format
+   */
+  protected $_timeFormat = null;
 
-	/**
-	 * CiviCRM time format
-	 *
-	 * @var string $_timeFormat Date format
-	 */
-	protected $_timeFormat = null;
+  /**
+   * Default parameter values
+   *
+   * @var array $_defaultWidgetParams Default parameters
+   */
+  public $_defaultWidgetParams = [
+    'title' => '',
+    'wtheme' => 'stripe',
+    'limit' => 5,
+    'admin_type' => 'simple',
+    'summary' => false,
+    'alllink' => false,
+    'city' => false,
+    'state' => 'none',
+    'country' => false,
+    'divider' => ', ',
+    'custom_display' => '',
+    'custom_filter' => '',
+    'event_type_id' => '',
+  ];
 
-	/**
-	 * Default parameter values
-	 *
-	 * @var array $_defaultWidgetParams Default parameters
-	 */
-	public $_defaultWidgetParams = array(
-		'title' => '',
-		'wtheme' => 'stripe',
-		'limit' => 5,
-		'admin_type' => 'simple',
-		'summary' => false,
-		'alllink' => false,
-		'city' => false,
-		'state' => 'none',
-		'country' => false,
-		'divider' => ', ',
-		'custom_display' => '',
-		'custom_filter' => '',
-		'event_type_id' => '',
-	);
+  /**
+   * Fields available for events
+   *
+   * @var array $_eventFields Name => Label array.
+   */
+  private $_eventFields = [];
 
-	/**
-	 * Fields available for events
-	 *
-	 * @var array $_eventFields Name => Label array.
-	 */
-	private $_eventFields = array();
+  /**
+   * Whether this is actually displaying as a shortcode section, not a real widget
+   *
+   * @var bool $_isShortcode It's a shortcode.
+   */
+  protected $_isShortcode = false;
 
-	/**
-	 * Whether this is actually displaying as a shortcode section, not a real widget
-	 *
-	 * @var bool $_isShortcode It's a shortcode.
-	 */
-	protected $_isShortcode = false;
-
-	/**
-	 * Construct the basic widget object.
-	 *
-	 * @param bool $shortcode Whether this is actually a shortcode, not a widget.
-	 */
-	public function __construct( $shortcode = false )
+  /**
+   * Construct the basic widget object.
+   *
+   * @param bool $shortcode Whether this is actually a shortcode, not a widget.
+   */
+  public function __construct($shortcode = false)
   {
-		// Widget actual processes.
-		parent::__construct(
-			'civievent-widget', // Base ID
-			__( 'CiviEvent List Widget', 'civievent-widget' ), // Name
-			array( 'description' => __( 'displays public CiviCRM events', 'civievent-widget' ) ) // Args.
-		);
+    // Widget actual processes.
+    parent::__construct(
+      'civievent-widget', // Base ID
+      __('CiviEvent List Widget', 'civievent-widget'), // Name
+      ['description' => __('displays public CiviCRM events', 'civievent-widget')], // Args.
+    );
 
-		if ( $shortcode )
-    {
-			$this->_isShortcode = true;
-		}
+    if ($shortcode) {
+      $this->_isShortcode = true;
+    }
 
-		$this->_defaultWidgetParams['title'] = __( 'Upcoming Events', 'civievent-widget' );
-		$this->commonConstruct();
-	}
+    $this->_defaultWidgetParams['title'] = __('Upcoming Events', 'civievent-widget');
+    $this->commonConstruct();
+  }
 
-	/**
-	 * Common features to both widgets.
-	 */
-	protected function commonConstruct()
+  /**
+   * Common features to both widgets.
+   */
+  protected function commonConstruct()
   {
-		if ( ! function_exists( 'civicrm_initialize' ) )
-    {
+    if (!function_exists('civicrm_initialize')) {
       return;
     }
-		civicrm_initialize();
+    civicrm_initialize();
 
-		$crmSystemPath = stream_resolve_include_path( 'CRM/Utils/System.php' );
-		if ( ! $crmSystemPath ) {
-			// CiviCRM isn't available on the include_path; abort quietly.
-			return;
-		}
-		require_once $crmSystemPath;
-		$this->_civiversion = CRM_Utils_System::version();
-		$this->_civiBasePage = CRM_Core_BAO_Setting::getItem( CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'wpBasePage' );
+    $crmSystemPath = stream_resolve_include_path('CRM/Utils/System.php');
+    if (!$crmSystemPath) {
+      // CiviCRM isn't available on the include_path; abort quietly.
+      return;
+    }
+    require_once $crmSystemPath;
+    $this->_civiversion = CRM_Utils_System::version();
+    $this->_civiBasePage = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'wpBasePage');
 
-		// Get date and time formats.
+    // Get date and time formats.
     /* this is fucked.
 		$params = array( 'name' => 'date_format' );
 		$values = array();
@@ -214,316 +202,261 @@ class civievent_Widget extends WP_Widget
 		CRM_Core_DAO::commonRetrieve( 'CRM_Core_DAO_PreferencesDate', $params, $values );
 		$this->_timeFormat = CRM_Utils_Array::value( 'time_format', $values, '%l:%M %p' );
     */
-		$this->_dateFormat = get_option('date_format');
-		$this->_timeFormat = get_option('time_format');
-	}
+    $this->_dateFormat = get_option('date_format');
+    $this->_timeFormat = get_option('time_format');
+  }
 
-	/**
-	 * Build the widget
-	 *
-	 * @param array $args Widget arguments.
-	 * @param array $instance Widget instance.
-	 */
-	public function widget( $args, $instance )
+  /**
+   * Build the widget
+   *
+   * @param array $args Widget arguments.
+   * @param array $instance Widget instance.
+   */
+  public function widget($args, $instance)
   {
     // no civi no go
-		if ( ! function_exists( 'civicrm_initialize' ) )
-    {
+    if (!function_exists('civicrm_initialize')) {
       return;
     }
     // civi too old
-		if ( version_compare( $this->_civiversion, '4.3.alpha1' ) < 0 )
-    {
+    if (version_compare($this->_civiversion, '4.3.alpha1') < 0) {
       return;
     }
 
     // get the fields
-		$fields = $this->getFields();
-    
-		$standardDisplay = false;
-		if ( ! empty( $instance['custom_display'] ) && CRM_Utils_Array::value( 'admin_type', $instance ) === 'custom' )
-    {
+    $fields = $this->getFields();
+
+    $standardDisplay = false;
+    if (!empty($instance['custom_display']) && CRM_Utils_Array::value('admin_type', $instance) === 'custom') {
       // WIDGET CUSTOM
       // Get the custom display params.
-			$custom = json_decode( $instance['custom_display'], true );
-			foreach ( $custom as $name => $fieldAttrs )
-      {
-				// Make sure only legit fields are sent.
-				if ( empty( $fields[ $name ] ) )
-        {
-					unset( $custom[ $name ] );
-				}
-			}
-			if ( empty( $custom ) )
-      {
-				$standardDisplay = true;
-			}
-      else
-      {
-				// Get custom filters.
-				$customFilters = json_decode( CRM_Utils_Array::value( 'custom_filter', $instance, '' ), true );
-				$filterParams = array(
-					'start_date' => array( '>=' => date( 'Y-m-d' ) ),
-					'is_public' => 1,
-					'options' => array(
-						'sort' => 'start_date ASC',
-						'limit' => CRM_Utils_Array::value( 'limit', $instance, 5 ),
-					),
-				);
-				$allCustomDisplayFields = self::getCustomDisplayTitles();
-				// Set filter params only if they're legit fields or options.
-				if ( is_array( $customFilters ) )
-        {
-					foreach ( $customFilters as $name => $val )
-          {
-						if ( 'custom' === $name )
-            {
-							foreach ( $val as $option => $optionVal )
-              {
-								if ( in_array( $option, $okOptions ) )
-                {
-									switch ( $option )
-                  {
-										case 'limit':
-										case 'offset':
-										case 'sort':
-											$filterParams['options'][ $option ] = $optionVal;
-									}
-								}
-							}
-						}
-            elseif ( array_key_exists( $name, $fields ) && ! array_key_exists( $name, $allCustomDisplayFields ) )
-            {
-							$filterParams[ $name ] = $val;
-						}
-					}
-				}
-				$fieldsToRetrieve = array_keys( $custom );
-				$customDisplayFields = array_intersect_key( $allCustomDisplayFields, $custom );
-				foreach ( $customDisplayFields as $customDisplayField => $dontcare )
-        {
-					$fieldsToRetrieve = array_merge( $fieldsToRetrieve, self::getCustomDisplayField( $customDisplayField ) );
-				}
-				// Return fields should be based on the custom_display only.
-				$filterParams['return'] = array_unique( $fieldsToRetrieve );
-				try
-        {
-					$eventsCustom = civicrm_api3( 'Event', 'get', $filterParams );
-					if ( ! empty( $eventsCustom['values'] ) )
-          {
-						$content = '<div class="civievent-widget-list civievent-widget-custom-display">';
-						$index = 0;
-						foreach ( $eventsCustom['values'] as $eventId => $event )
-            {
-							$oe = ($index&1) ? 'odd' : 'even';
-							$content .= "<div class=\"civievent-widget-event civievent-widget-event-$oe civievent-widget-event-$index\">";
-							$index++;
-							foreach ( $custom as $name => $fieldAttrs )
-              {
-								if ( empty( $event[ $name ] ) )
-                {
-									if ( array_key_exists( $name, $customDisplayFields ) )
-                  {
-										$fieldVal = self::getCustomDisplayField( $name, $event );
-									}
-                  else
-                  {
-										continue;
-									}
-								}
-                else
-                {
-									$fieldVal = $event[ $name ];
-								}
-								$rowField = empty( $fieldAttrs['prefix'] ) ? '' : wp_filter_kses( $fieldAttrs['prefix'] );
-								if ( ! empty( $fieldAttrs['title'] ) )
-                {
-								 	$rowField .= empty( $fieldAttrs['wrapper'] ) ? "{$fields[ $name ]}: " : "<span class=\"civievent-widget-custom-label\">{$fields[ $name ]}: </span>";
-								}
-								$rowField .= empty( $fieldAttrs['wrapper'] ) ? $fieldVal : "<span class=\"civievent-widget-custom-value\">$fieldVal</span>";
-								$rowField .= empty( $fieldAttrs['suffix'] ) ? '' : wp_filter_kses( $fieldAttrs['suffix'] );
+      $custom = json_decode($instance['custom_display'], true);
+      foreach ($custom as $name => $fieldAttrs) {
+        // Make sure only legit fields are sent.
+        if (empty($fields[$name])) {
+          unset($custom[$name]);
+        }
+      }
+      if (empty($custom)) {
+        $standardDisplay = true;
+      } else {
+        // Get custom filters.
+        $customFilters = json_decode(CRM_Utils_Array::value('custom_filter', $instance, ''), true);
+        $filterParams = [
+          'start_date' => ['>=' => date('Y-m-d')],
+          'is_public' => 1,
+          'options' => [
+            'sort' => 'start_date ASC',
+            'limit' => CRM_Utils_Array::value('limit', $instance, 5),
+          ],
+        ];
+        $allCustomDisplayFields = self::getCustomDisplayTitles();
+        // Set filter params only if they're legit fields or options.
+        if (is_array($customFilters)) {
+          foreach ($customFilters as $name => $val) {
+            if ('custom' === $name) {
+              foreach ($val as $option => $optionVal) {
+                if (in_array($option, $okOptions)) {
+                  switch ($option) {
+                    case 'limit':
+                    case 'offset':
+                    case 'sort':
+                      $filterParams['options'][$option] = $optionVal;
+                  }
+                }
+              }
+            } elseif (array_key_exists($name, $fields) && !array_key_exists($name, $allCustomDisplayFields)) {
+              $filterParams[$name] = $val;
+            }
+          }
+        }
+        $fieldsToRetrieve = array_keys($custom);
+        $customDisplayFields = array_intersect_key($allCustomDisplayFields, $custom);
+        foreach ($customDisplayFields as $customDisplayField => $dontcare) {
+          $fieldsToRetrieve = array_merge($fieldsToRetrieve, self::getCustomDisplayField($customDisplayField));
+        }
+        // Return fields should be based on the custom_display only.
+        $filterParams['return'] = array_unique($fieldsToRetrieve);
+        try {
+          $eventsCustom = civicrm_api3('Event', 'get', $filterParams);
+          if (!empty($eventsCustom['values'])) {
+            $content = '<div class="civievent-widget-list civievent-widget-custom-display">';
+            $index = 0;
+            foreach ($eventsCustom['values'] as $eventId => $event) {
+              $oe = $index & 1 ? 'odd' : 'even';
+              $content .= "<div class=\"civievent-widget-event civievent-widget-event-$oe civievent-widget-event-$index\">";
+              $index++;
+              foreach ($custom as $name => $fieldAttrs) {
+                if (empty($event[$name])) {
+                  if (array_key_exists($name, $customDisplayFields)) {
+                    $fieldVal = self::getCustomDisplayField($name, $event);
+                  } else {
+                    continue;
+                  }
+                } else {
+                  $fieldVal = $event[$name];
+                }
+                $rowField = empty($fieldAttrs['prefix']) ? '' : wp_filter_kses($fieldAttrs['prefix']);
+                if (!empty($fieldAttrs['title'])) {
+                  $rowField .= empty($fieldAttrs['wrapper']) ? "{$fields[$name]}: " : "<span class=\"civievent-widget-custom-label\">{$fields[$name]}: </span>";
+                }
+                $rowField .= empty($fieldAttrs['wrapper']) ? $fieldVal : "<span class=\"civievent-widget-custom-value\">$fieldVal</span>";
+                $rowField .= empty($fieldAttrs['suffix']) ? '' : wp_filter_kses($fieldAttrs['suffix']);
 
-								$rowClass = sanitize_html_class( "civievent-widget-custom-display-$name" );
-								$content .= empty( $fieldAttrs['wrapper'] ) ? "$rowField\n" : "<span class=\"$rowClass\">$rowField</span>\n";
-							}
-							$content .= '</div>';
-						}
-						$content .= '</div>';
-					}
-          else
-          {
-						$content = '';
-					}
-				}
-        catch (CiviCRM_API3_Exception $e)
-        {
-					CRM_Core_Error::debug_log_message( "cib-civievent-widget: ".$e->getMessage() );
-				}
-			}
-		}
-    else
-    {
+                $rowClass = sanitize_html_class("civievent-widget-custom-display-$name");
+                $content .= empty($fieldAttrs['wrapper']) ? "$rowField\n" : "<span class=\"$rowClass\">$rowField</span>\n";
+              }
+              $content .= '</div>';
+            }
+            $content .= '</div>';
+          } else {
+            $content = '';
+          }
+        } catch (CiviCRM_API3_Exception $e) {
+          CRM_Core_Error::debug_log_message('cib-civievent-widget: ' . $e->getMessage());
+        }
+      }
+    } else {
       // WIDGET standard display
       // we need to get the ID of the cibapp_Image_Link
-      try
-      {
-        $customImage = civicrm_api3('custom_field', 'get', array(
-          'label' => "cibapp_Image_Link",
-        ));
-      }
-      catch (CiviCRM_API3_Exception $e)
-      {
+      try {
+        $customImage = civicrm_api3('custom_field', 'get', [
+          'label' => 'cibapp_Image_Link',
+        ]);
+      } catch (CiviCRM_API3_Exception $e) {
         // we are not doping anything here, we just wont display the image, thats all.
         $error = $e->getMessage();
-        error_log("cib-civievent-widget: We cannot display the image -> ".print_r($error));
+        error_log('cib-civievent-widget: We cannot display the image -> ' . print_r($error));
       }
 
       // this is awkward I have to say, there should be a better way to do this
       // CIVICRM uses custom PLUS the id to store the custom value, cant we just use the label?
-      $customValue="custom_".$customImage['id'];
-      
-			// Outputs the content of the widget.
-			// apply event type filter on standard output.
-			$event_type_id = empty( $instance['event_type_id'] ) ? null : intval( $instance['event_type_id'] );
-			$cal = CRM_Event_BAO_Event::getCompleteInfo();
-			$index = 0;
+      $customValue = 'custom_' . $customImage['id'];
+
+      // Outputs the content of the widget.
+      // apply event type filter on standard output.
+      $event_type_id = empty($instance['event_type_id']) ? null : intval($instance['event_type_id']);
+      $cal = CRM_Event_BAO_Event::getCompleteInfo();
+      $index = 0;
 
       // start the content
-			$content = '<div class="civievent-widget-list">';
+      $content = '<div class="civievent-widget-list">';
 
       // row collector
-      $row="";
+      $row = '';
 
       // any events?
-      $eventsFound=false;
-      
+      $eventsFound = false;
+
       // for each event
-			foreach ( $cal as $event )
-      {
+      foreach ($cal as $event) {
         // yep, at least one event was found
-        $eventsFound=true;
-        
+        $eventsFound = true;
+
         // this is just to catch errors, we dont do anything with the error
-        try
-        {
-          $eventFULL = civicrm_api3('Event', 'get', array(
-            'id' => $event["event_id"],
-          ));
-        }
-        catch (CiviCRM_API3_Exception $e)
-        {
+        try {
+          $eventFULL = civicrm_api3('Event', 'get', [
+            'id' => $event['event_id'],
+          ]);
+        } catch (CiviCRM_API3_Exception $e) {
           // we are not doing anything here, we just wont display the image, thats all.
           $error = $e->getMessage();
-          error_log("cib-civievent-widget We are so fucked -> ".print_r($error, ));
+          error_log('cib-civievent-widget We are so fucked -> ' . print_r($error));
         }
-        
+
         // get to the point
-        $eventFULL=$eventFULL['values'][$event["event_id"]];
+        $eventFULL = $eventFULL['values'][$event['event_id']];
 
         // this is the image URL
-        $daImage="";
+        $daImage = '';
 
         // now check whether the image is set.
-        if(!empty($eventFULL[$customValue]) && $eventFULL[$customValue]!="")
-        {
+        if (!empty($eventFULL[$customValue]) && $eventFULL[$customValue] != '') {
           // so the image is set, display it.
-          $daImage="<img src='".$eventFULL[$customValue]."' />";
+          $daImage = "<img src='" . $eventFULL[$customValue] . "' />";
         }
-        
+
         // the CIVICRM EVENT URL
-				// $url = CRM_Utils_Array::value( 'url', $event );
+        // $url = CRM_Utils_Array::value( 'url', $event );
         // USE THIS widgets url
-				$url = "/events/event-single/?eventID=".$event["event_id"];
+        $url = '/events/event-single/?eventID=' . $event['event_id'];
 
         // title and summary we need, too
-				$title = CRM_Utils_Array::value( 'title', $event );
-				$summary = CRM_Utils_Array::value( 'summary', $event, '' );
-        
+        $title = CRM_Utils_Array::value('title', $event);
+        $summary = CRM_Utils_Array::value('summary', $event, '');
+
         // start the row with the color division
-				$oe = ($index&1) ? 'odd' : 'even';
-        $row .= "<div class='civievent-widget-event-row civievent-widget-event-$oe civievent-widget-event-".$index."'>";
+        $oe = $index & 1 ? 'odd' : 'even';
+        $row .= "<div class='civievent-widget-event-row civievent-widget-event-$oe civievent-widget-event-" . $index . "'>";
 
         // left cell
-				$row .= "<div class='civievent-widget-event-cell civievent-widget-event-cell-left'>";
-				$row .= $this->dateFix( $event, 'civievent-widget-event' );
-				$row .= "</div>";
+        $row .= "<div class='civievent-widget-event-cell civievent-widget-event-cell-left'>";
+        $row .= $this->dateFix($event, 'civievent-widget-event');
+        $row .= '</div>';
 
         // right cell
-				$row .= "<div class='civievent-widget-event-cell civievent-widget-event-cell-right'>";
-        if($title)
-        {
+        $row .= "<div class='civievent-widget-event-cell civievent-widget-event-cell-right'>";
+        if ($title) {
           // title
-					$row .= '<div class="civievent-widget-event-title"><h2>';
-          if(!empty($url))
-          {
-            $row .= "<a href='".$url."'>".$title."</a>";
-          }
-          else
-          {
+          $row .= '<div class="civievent-widget-event-title"><h2>';
+          if (!empty($url)) {
+            $row .= "<a href='" . $url . "'>" . $title . '</a>';
+          } else {
             $row .= $title;
           }
-					$row .= '</h2></div>';
+          $row .= '</h2></div>';
 
           // location
-          $row .= self::locFix( $event, $event['event_id'], $instance, 'civievent-widget-event' );
+          $row .= self::locFix($event, $event['event_id'], $instance, 'civievent-widget-event');
 
           // image
-          if(!empty($daImage) && $daImage!="")
-          {
-            if(!empty($url))
-            {
+          if (!empty($daImage) && $daImage != '') {
+            if (!empty($url)) {
               $row .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
-              $row .= "<div class='civievent-widget-single-image'><a href='".$url."'>".$daImage."</a></div>";
-            }
-            else
-            {
+              $row .= "<div class='civievent-widget-single-image'><a href='" . $url . "'>" . $daImage . '</a></div>';
+            } else {
               $row .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
-              $row .= "<div class='civievent-widget-single-image'>".$daImage."</div>";
+              $row .= "<div class='civievent-widget-single-image'>" . $daImage . '</div>';
             }
           }
 
           // summrt
-					if ( $instance['summary'] ) {
-						$row .= "<div class='civievent-widget-event-summary'>$summary</div>";
-					}
-          
+          if ($instance['summary']) {
+            $row .= "<div class='civievent-widget-event-summary'>$summary</div>";
+          }
+
           // register
-					$row .= self::regFix( $event, $event['event_id'], 'civievent-widget', $url );
+          $row .= self::regFix($event, $event['event_id'], 'civievent-widget', $url);
 
           // space
           $row .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
-          
-				}
-				$row .= "</div>";
-        
+        }
+        $row .= '</div>';
+
         // close this row
         $row .= "</div>\n";
-        
+
         // increase counter (for odd/even and break)
-				$index++;
+        $index++;
 
         // if we reached the end, get out
-				if ( $index >= $instance['limit'] )
-        {
+        if ($index >= $instance['limit']) {
           break;
         }
-			}
+      }
 
-      if($eventsFound)
-      {
+      if ($eventsFound) {
         // add the rows to the content
         $content .= $row;
-      }
-      else
-      {
+      } else {
         // none found
         $content .= "<div class='civievent-widget-event-row civievent-widget-event-0 civievent-widget-event-0'>";
-        $content .= "<h3>No Events Found</h3>";
-        $content .= "</div>";
+        $content .= '<h3>No Events Found</h3>';
+        $content .= '</div>';
       }
-      
+
       // close the content division
-			$content .= "</div>\n";
+      $content .= "</div>\n";
 
       /*
       this makes a lovely table but does have the wrong links.
@@ -532,368 +465,340 @@ class civievent_Widget extends WP_Widget
 				$content .= "<div class=\"civievent-widget-viewall\"><a href=\"$viewall\">" . ts( 'View all' ) . '</a></div>';
 			}
       */
-      
-			$classes = array();
 
-			if ( $instance['summary'] )
-      {
-				$classes[] = 'civievent-widget-withsummary';
-			}
+      $classes = [];
 
-		}
+      if ($instance['summary']) {
+        $classes[] = 'civievent-widget-withsummary';
+      }
+    }
 
     // applied classes to string
-		$classes[] = ( strlen( $instance['wtheme'] ) ) ? "civievent-widget-{$instance['wtheme']}" : 'civievent-widget-custom';
-		foreach ( $classes as &$class )
-    {
-			$class = sanitize_html_class( $class );
-		}
-		$classes = implode( ' ', $classes );
+    $classes[] = strlen($instance['wtheme']) ? "civievent-widget-{$instance['wtheme']}" : 'civievent-widget-custom';
+    foreach ($classes as &$class) {
+      $class = sanitize_html_class($class);
+    }
+    $classes = implode(' ', $classes);
 
     // attach THIS stylesheet
-		wp_enqueue_style( 'civievent-widget-Stylesheet' );
+    wp_enqueue_style('civievent-widget-Stylesheet');
 
     // get the PAGE title
-		$title = apply_filters( 'widget_title', $instance['title'] );
+    $title = apply_filters('widget_title', $instance['title']);
 
     // assign
-		if ( $this->_isShortcode )
-    {
+    if ($this->_isShortcode) {
       // shortcode
-			if ( ! empty( $title ) )
-      {
-				$content = "<h2 class=\"title civievent-widget-title\">$title</h2>$content";
-			}
-			return "<div class=\"civievent-widget $classes\">$content</div>";
-		}
-    else
-    {
+      if (!empty($title)) {
+        $content = "<h2 class=\"title civievent-widget-title\">$title</h2>$content";
+      }
+      return "<div class=\"civievent-widget $classes\">$content</div>";
+    } else {
       // instance
-			$wTitle = $title ? $args['before_title'] . $title . $args['after_title'] : '';
-			$content = "$wTitle<div class=\"$classes\">$content</div>";
-			echo $args['before_widget'] . $content . $args['after_widget'];
-		}
-	}
+      $wTitle = $title ? $args['before_title'] . $title . $args['after_title'] : '';
+      $content = "$wTitle<div class=\"$classes\">$content</div>";
+      echo $args['before_widget'] . $content . $args['after_widget'];
+    }
+  }
 
-	/**
-	 * Format a select list of event types
-	 *
-	 * @param string $field_name
-	 *   The name for the event type field.
-	 * @param string $field_id
-	 *   The ID of the event type field.
-	 * @param string $event_type_id
-	 *   The event type currently in the instance
-	 * @return string
-	 *   A formatted `<select>` element with all the options.
-	 */
-	protected static function event_type_select( $field_name, $field_id, $event_type_id )
+  /**
+   * Format a select list of event types
+   *
+   * @param string $field_name
+   *   The name for the event type field.
+   * @param string $field_id
+   *   The ID of the event type field.
+   * @param string $event_type_id
+   *   The event type currently in the instance
+   * @return string
+   *   A formatted `<select>` element with all the options.
+   */
+  protected static function event_type_select($field_name, $field_id, $event_type_id)
   {
-		if ( empty( $event_type_id ) )
-    {
-			$event_type_id = 0;
-		}
+    if (empty($event_type_id)) {
+      $event_type_id = 0;
+    }
 
-		// Always show the "Any" option
-		$options = array(
-			0 => __( 'Any', 'civievent-widget' ),
-		);
+    // Always show the "Any" option
+    $options = [
+      0 => __('Any', 'civievent-widget'),
+    ];
 
-		// Look up event types
-		try
-    {
-			$event_types = civicrm_api3( 'Event', 'getoptions', array(
-				'field' => 'event_type_id',
-				'context' => 'search',
-			));
-			if ( ! empty( $event_types['values'] ) )
-      {
-				$options += $event_types['values'];
-			}
-		}
-    catch ( CiviCRM_API3_Exception $e )
-    {
-			CRM_Core_Error::debug_log_message( $e->getMessage() );
-		}
+    // Look up event types
+    try {
+      $event_types = civicrm_api3('Event', 'getoptions', [
+        'field' => 'event_type_id',
+        'context' => 'search',
+      ]);
+      if (!empty($event_types['values'])) {
+        $options += $event_types['values'];
+      }
+    } catch (CiviCRM_API3_Exception $e) {
+      CRM_Core_Error::debug_log_message($e->getMessage());
+    }
 
-		// Render options from array of values
-		$rendered_options = '';
-		foreach ( $options as $id => $label )
-    {
-			$selected = selected( $event_type_id, $id, false );
-			$rendered_options .= <<<HEREDOC
-			<option value="$id" $selected>$label</option>
-HEREDOC;
-		}
+    // Render options from array of values
+    $rendered_options = '';
+    foreach ($options as $id => $label) {
+      $selected = selected($event_type_id, $id, false);
+      $rendered_options .= <<<HEREDOC
+      			<option value="$id" $selected>$label</option>
+      HEREDOC;
+    }
 
-		// Return a formatted `<select>` element
-		return <<<HEREDOC
-		<select name="$field_name" id="$field_id">
-$rendered_options
-		</select>
-HEREDOC;
-	}
+    // Return a formatted `<select>` element
+    return <<<HEREDOC
+    		<select name="$field_name" id="$field_id">
+    $rendered_options
+    		</select>
+    HEREDOC;
+  }
 
-	/**
-	 * Widget config form.
-	 *
-	 * @param array $instance The widget instance.
-	 */
-	public function form( $instance )
+  /**
+   * Widget config form.
+   *
+   * @param array $instance The widget instance.
+   */
+  public function form($instance)
   {
-		if ( ! function_exists( 'civicrm_initialize' ) )
-    { ?>
-			<h3><?php _e( 'You must enable and install CiviCRM to use this plugin.', 'civievent-widget' ); ?></h3>
-			<?php
-			return;
-		}
-    elseif ( version_compare( $this->_civiversion, '4.3.alpha1' ) < 0 )
-    { ?>
-			<h3><?php print __( 'You must enable and install CiviCRM 4.3 or higher to use this plugin.	You are currently running CiviCRM ', 'civievent-widget' ) . $this->_civiversion; ?></h3>
-			<?php
-			return;
-		}
-    elseif ( strlen( $this->_civiBasePage ) < 1 )
-    {
-			$adminUrl = CRM_Utils_System::url( 'civicrm/admin/setting/uf', 'reset=1' );
-			?><div class="civievent-widget-nobasepage">
-				<h3><?php _e( 'No Base Page Set', 'civievent-widget' ); ?></h3>
+    if (!function_exists('civicrm_initialize')) { ?>
+			<h3><?php _e('You must enable and install CiviCRM to use this plugin.', 'civievent-widget'); ?></h3>
+			<?php return;} elseif (version_compare($this->_civiversion, '4.3.alpha1') < 0) { ?>
+			<h3><?php print __('You must enable and install CiviCRM 4.3 or higher to use this plugin.	You are currently running CiviCRM ', 'civievent-widget') . $this->_civiversion; ?></h3>
+			<?php return;} elseif (strlen($this->_civiBasePage) < 1) {
+      $adminUrl = CRM_Utils_System::url('civicrm/admin/setting/uf', 'reset=1'); ?><div class="civievent-widget-nobasepage">
+				<h3><?php _e('No Base Page Set', 'civievent-widget'); ?></h3>
 				<?php
-				print '<p>' . __( 'You do not have a WordPress Base Page set in your CiviCRM settings.  This can cause the CiviEvent Widget to display inconsistent links.', 'civievent-widget' );
-				print '<a href=' . $adminUrl . '>' . __( 'Please set this', 'civievent-widget' ) . '</a> ' . __( 'before using the widget.', 'civievent-widget' ) . '</p>';
-				?>
+    print '<p>' . __('You do not have a WordPress Base Page set in your CiviCRM settings.  This can cause the CiviEvent Widget to display inconsistent links.', 'civievent-widget');
+    print '<a href=' . $adminUrl . '>' . __('Please set this', 'civievent-widget') . '</a> ' . __('before using the widget.', 'civievent-widget') . '</p>';
+    ?>
 			</div><?php
-		}
+    }
 
-		wp_enqueue_script( 'civievent-widget-form', plugins_url( 'cib-civievent-widget-form.js', __FILE__ ), array( 'jquery', 'underscore' ) );
-		wp_enqueue_style( 'civievent-widget-form-css', plugins_url( 'cib-civievent-widget-form.css', __FILE__ ) );
+    wp_enqueue_script('civievent-widget-form', plugins_url('cib-civievent-widget-form.js', __FILE__), ['jquery', 'underscore']);
+    wp_enqueue_style('civievent-widget-form-css', plugins_url('cib-civievent-widget-form.css', __FILE__));
 
-		if ( empty( $instance['admin_type'] ) )
-    {
-			$instance['admin_type'] = 'simple';
-		}
+    if (empty($instance['admin_type'])) {
+      $instance['admin_type'] = 'simple';
+    }
 
-		// Outputs the options form on admin.
-		foreach ( $this->_defaultWidgetParams as $param => $val )
-    {
-			if ( false === $val )
-      {
-				$$param = isset( $instance[ $param ] ) ? (bool) $instance[ $param ] : false;
-			}
-      else
-      {
-				$$param = isset( $instance[ $param ] ) ? $instance[ $param ] : $val;
-			}
-		}
+    // Outputs the options form on admin.
+    foreach ($this->_defaultWidgetParams as $param => $val) {
+      if (false === $val) {
+        $$param = isset($instance[$param]) ? (bool) $instance[$param] : false;
+      } else {
+        $$param = isset($instance[$param]) ? $instance[$param] : $val;
+      }
+    }
 
-		$fields = array_reverse( array_unique( array_reverse( $this->getFields() ) ) );
+    $fields = array_reverse(array_unique(array_reverse($this->getFields())));
 
-		if ( ! empty( $fields ) )
-    {
-			$fieldSelect = '<select name="getfields-' . $this->get_field_name( 'custom-display' ) . '" class="civievent-widget-getfields widefat">';
-			$fieldSelect .= '<option value="">' . __( '- Select a field to add -', 'civievent-widget' ) . '</option>';
-			foreach ( $fields as $fieldName => $field )
-      {
-				$fieldSelect .= "<option value=\"$fieldName\">$field</option>";
-			}
-			$fieldSelect .= '</select>';
-		}
-    else
-    {
-			$fieldSelect = '';
-		}
-		?>
+    if (!empty($fields)) {
+      $fieldSelect = '<select name="getfields-' . $this->get_field_name('custom-display') . '" class="civievent-widget-getfields widefat">';
+      $fieldSelect .= '<option value="">' . __('- Select a field to add -', 'civievent-widget') . '</option>';
+      foreach ($fields as $fieldName => $field) {
+        $fieldSelect .= "<option value=\"$fieldName\">$field</option>";
+      }
+      $fieldSelect .= '</select>';
+    } else {
+      $fieldSelect = '';
+    }
+    ?>
 		<p>
-		<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:', 'civievent-widget' ); ?></label>
-		<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>" />
+		<label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:', 'civievent-widget'); ?></label>
+		<input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo esc_attr($title); ?>" />
 		</p>
 		<p>
-		<label for="<?php echo $this->get_field_id( 'wtheme' ); ?>"><?php _e( 'Widget theme:', 'civievent-widget' ); ?></label>
-		<input class="widefat" id="<?php echo $this->get_field_id( 'wtheme' ); ?>" name="<?php echo $this->get_field_name( 'wtheme' ); ?>" type="text" value="<?php echo esc_attr( $wtheme ); ?>" />
-		<?php _e( 'Enter the theme for the widget.	Standard options are "stripe" and "divider", or you can enter your own value, which will be added to the widget class name.', 'civievent-widget' ); ?>
+		<label for="<?php echo $this->get_field_id('wtheme'); ?>"><?php _e('Widget theme:', 'civievent-widget'); ?></label>
+		<input class="widefat" id="<?php echo $this->get_field_id(
+    'wtheme',
+  ); ?>" name="<?php echo $this->get_field_name('wtheme'); ?>" type="text" value="<?php echo esc_attr($wtheme); ?>" />
+		<?php _e(
+    'Enter the theme for the widget.	Standard options are "stripe" and "divider", or you can enter your own value, which will be added to the widget class name.',
+    'civievent-widget',
+  ); ?>
 		</p>
 		<p>
-		<label for="<?php echo $this->get_field_id( 'limit' ); ?>"><?php _e( 'Limit:', 'civievent-widget' ); ?></label>
-		<input class="widefat" id="<?php echo $this->get_field_id( 'limit' ); ?>" name="<?php echo $this->get_field_name( 'limit' ); ?>" type="text" value="<?php echo esc_attr( $limit ); ?>" />
+		<label for="<?php echo $this->get_field_id('limit'); ?>"><?php _e('Limit:', 'civievent-widget'); ?></label>
+		<input class="widefat" id="<?php echo $this->get_field_id('limit'); ?>" name="<?php echo $this->get_field_name('limit'); ?>" type="text" value="<?php echo esc_attr($limit); ?>" />
 		</p>
 		<div class="civievent-widget-admin-sections">
-			<input type="radio" id="<?php echo $this->get_field_id( 'admin_type' ); ?>-simple" name="<?php echo $this->get_field_name( 'admin_type' );?>" value="simple" <?php checked( $admin_type, 'simple' ); ?>>
-			<input type="radio" id="<?php echo $this->get_field_id( 'admin_type' ); ?>-custom" name="<?php echo $this->get_field_name( 'admin_type' );?>" value="custom" <?php checked( $admin_type, 'custom' ); ?>>
-			<label for="<?php echo $this->get_field_id( 'admin_type' ); ?>-simple" class="civievent-widget-admin-type-label">Simple</label>
-			<label for="<?php echo $this->get_field_id( 'admin_type' ); ?>-custom" class="civievent-widget-admin-type-label">Custom</label>
+			<input type="radio" id="<?php echo $this->get_field_id(
+     'admin_type',
+   ); ?>-simple" name="<?php echo $this->get_field_name('admin_type'); ?>" value="simple" <?php checked($admin_type, 'simple'); ?>>
+			<input type="radio" id="<?php echo $this->get_field_id(
+     'admin_type',
+   ); ?>-custom" name="<?php echo $this->get_field_name('admin_type'); ?>" value="custom" <?php checked($admin_type, 'custom'); ?>>
+			<label for="<?php echo $this->get_field_id('admin_type'); ?>-simple" class="civievent-widget-admin-type-label">Simple</label>
+			<label for="<?php echo $this->get_field_id('admin_type'); ?>-custom" class="civievent-widget-admin-type-label">Custom</label>
 			<div class="civievent-widget-admin-simple">
 				<p>
-				<label for="<?php echo $this->get_field_id( 'event_type_id' ); ?>"><?php _e( 'Event type:', 'civievent-widget' ); ?></label>
-					<?php echo self::event_type_select( $this->get_field_name( 'event_type_id' ), $this->get_field_id( 'event_type_id' ), $event_type_id ); ?>
+				<label for="<?php echo $this->get_field_id('event_type_id'); ?>"><?php _e('Event type:', 'civievent-widget'); ?></label>
+					<?php echo self::event_type_select($this->get_field_name('event_type_id'), $this->get_field_id('event_type_id'), $event_type_id); ?>
 				</p>
-				<p><input type="checkbox" <?php checked( $city ); ?> name="<?php echo $this->get_field_name( 'city' ); ?>" id="<?php echo $this->get_field_id( 'city' ); ?>" class="checkbox">
-				<label for="<?php echo $this->get_field_id( 'city' ); ?>"><?php _e( 'Display city?', 'civievent-widget' ); ?></label>
+				<p><input type="checkbox" <?php checked($city); ?> name="<?php echo $this->get_field_name('city'); ?>" id="<?php echo $this->get_field_id('city'); ?>" class="checkbox">
+				<label for="<?php echo $this->get_field_id('city'); ?>"><?php _e('Display city?', 'civievent-widget'); ?></label>
 				</p>
 				<p>
-				<label for="<?php echo $this->get_field_id( 'state' ); ?>"><?php _e( 'Display state/province?', 'civievent-widget' ); ?></label>
-					<select name="<?php echo $this->get_field_name( 'state' ); ?>" id="<?php echo $this->get_field_id( 'state' ); ?>">
-						<option value="none" <?php selected( $state, 'none' ); ?>><?php _e( 'Hidden', 'civievent-widget' ); ?></option>
-						<option value="abbreviate" <?php selected( $state, 'abbreviate' ); ?>><?php _e( 'Abbreviations', 'civievent-widget' ); ?></option>
-						<option value="full" <?php selected( $state, 'full' ); ?>><?php _e( 'Full names', 'civievent-widget' ); ?></option>
+				<label for="<?php echo $this->get_field_id('state'); ?>"><?php _e('Display state/province?', 'civievent-widget'); ?></label>
+					<select name="<?php echo $this->get_field_name('state'); ?>" id="<?php echo $this->get_field_id('state'); ?>">
+						<option value="none" <?php selected($state, 'none'); ?>><?php _e('Hidden', 'civievent-widget'); ?></option>
+						<option value="abbreviate" <?php selected($state, 'abbreviate'); ?>><?php _e('Abbreviations', 'civievent-widget'); ?></option>
+						<option value="full" <?php selected($state, 'full'); ?>><?php _e('Full names', 'civievent-widget'); ?></option>
 					</select>
 				</p>
-				<p><input type="checkbox" <?php checked( $country ); ?> name="<?php echo $this->get_field_name( 'country' ); ?>" id="<?php echo $this->get_field_id( 'country' ); ?>" class="checkbox">
-				<label for="<?php echo $this->get_field_id( 'country' ); ?>"><?php _e( 'Display country?', 'civievent-widget' ); ?></label>
+				<p><input type="checkbox" <?php checked($country); ?> name="<?php echo $this->get_field_name('country'); ?>" id="<?php echo $this->get_field_id('country'); ?>" class="checkbox">
+				<label for="<?php echo $this->get_field_id('country'); ?>"><?php _e('Display country?', 'civievent-widget'); ?></label>
 				</p>
 				<p>
-				<label for="<?php echo $this->get_field_id( 'divider' ); ?>"><?php _e( 'City, state, country divider:', 'civievent-widget' ); ?></label>
-				<input class="widefat" id="<?php echo $this->get_field_id( 'divider' ); ?>" name="<?php echo $this->get_field_name( 'divider' ); ?>" type="text" value="<?php echo esc_attr( $divider ); ?>" />
-				<?php _e( 'Enter the character(s) that should separate the city, state/province, and/or country when displayed.', 'civievent-widget' ); ?>
+				<label for="<?php echo $this->get_field_id('divider'); ?>"><?php _e('City, state, country divider:', 'civievent-widget'); ?></label>
+				<input class="widefat" id="<?php echo $this->get_field_id(
+      'divider',
+    ); ?>" name="<?php echo $this->get_field_name('divider'); ?>" type="text" value="<?php echo esc_attr($divider); ?>" />
+				<?php _e('Enter the character(s) that should separate the city, state/province, and/or country when displayed.', 'civievent-widget'); ?>
 				</p>
-				<p><input type="checkbox" <?php checked( $summary ); ?> name="<?php echo $this->get_field_name( 'summary' ); ?>" id="<?php echo $this->get_field_id( 'summary' ); ?>" class="checkbox">
-				<label for="<?php echo $this->get_field_id( 'summary' ); ?>"><?php _e( 'Display summary?', 'civievent-widget' ); ?></label>
+				<p><input type="checkbox" <?php checked($summary); ?> name="<?php echo $this->get_field_name('summary'); ?>" id="<?php echo $this->get_field_id('summary'); ?>" class="checkbox">
+				<label for="<?php echo $this->get_field_id('summary'); ?>"><?php _e('Display summary?', 'civievent-widget'); ?></label>
 				</p>
-				<p><input type="checkbox" <?php checked( $alllink ); ?> name="<?php echo $this->get_field_name( 'alllink' ); ?>" id="<?php echo $this->get_field_id( 'alllink' ); ?>" class="checkbox">
-				<label for="<?php echo $this->get_field_id( 'alllink' ); ?>"><?php _e( 'Display "view all"?', 'civievent-widget' ); ?></label>
+				<p><input type="checkbox" <?php checked($alllink); ?> name="<?php echo $this->get_field_name('alllink'); ?>" id="<?php echo $this->get_field_id('alllink'); ?>" class="checkbox">
+				<label for="<?php echo $this->get_field_id('alllink'); ?>"><?php _e('Display "view all"?', 'civievent-widget'); ?></label>
 				</p>
 			</div>
 			<div class="civievent-widget-admin-custom">
-				<p><?php _e( 'ADVANCED: If you want to display additional or different fields, add their names here using the drop-down.', 'civievent-widget' ); ?></p>
+				<p><?php _e('ADVANCED: If you want to display additional or different fields, add their names here using the drop-down.', 'civievent-widget'); ?></p>
 				<div>
-					<label for="<?php echo $this->get_field_id( 'custom_display' ); ?>"><?php _e( 'Custom display fields:', 'civievent-widget' ); ?></label>
+					<label for="<?php echo $this->get_field_id('custom_display'); ?>"><?php _e('Custom display fields:', 'civievent-widget'); ?></label>
 					<?php echo $fieldSelect; ?>
-					<input class="widefat civievent-widget-custom-display-params" id="<?php echo $this->get_field_id( 'custom_display' ); ?>" name="<?php echo $this->get_field_name( 'custom_display' ); ?>" type="text" value="<?php echo esc_attr( $custom_display ); ?>" />
+					<input class="widefat civievent-widget-custom-display-params" id="<?php echo $this->get_field_id(
+       'custom_display',
+     ); ?>" name="<?php echo $this->get_field_name('custom_display'); ?>" type="text" value="<?php echo esc_attr($custom_display); ?>" />
 					<a class="show-json" href="#" onclick="return false;">Show JSON</a>
 					<p class="civievent-widget-custom-display-ui"></p>
 				</div>
 				<p>
-					<label for="<?php echo $this->get_field_id( 'custom_filter' ); ?>"><?php _e( 'Custom API filter:', 'civievent-widget' ); ?></label>
-					<input class="widefat" id="<?php echo $this->get_field_id( 'custom_filter' ); ?>" name="<?php echo $this->get_field_name( 'custom_filter' ); ?>" type="text" value="<?php echo esc_attr( $custom_filter ); ?>" />
+					<label for="<?php echo $this->get_field_id('custom_filter'); ?>"><?php _e('Custom API filter:', 'civievent-widget'); ?></label>
+					<input class="widefat" id="<?php echo $this->get_field_id(
+       'custom_filter',
+     ); ?>" name="<?php echo $this->get_field_name('custom_filter'); ?>" type="text" value="<?php echo esc_attr($custom_filter); ?>" />
 			</div>
 		</div>
 		<?php
-	}
+  }
 
-	/**
-	 * Widget update function.
-	 *
-	 * @param array $new_instance The widget instance to be saved.
-	 * @param array $old_instance The widget instance prior to update.
-	 */
-	public function update( $new_instance, $old_instance )
+  /**
+   * Widget update function.
+   *
+   * @param array $new_instance The widget instance to be saved.
+   * @param array $old_instance The widget instance prior to update.
+   */
+  public function update($new_instance, $old_instance)
   {
-		// Processes widget options to be saved.
-		$instance = array();
-		$instance['title'] = ( ! empty( $new_instance['title'] ) ) ? strip_tags( $new_instance['title'] ) : '';
-		if ( ! empty( $new_instance['wtheme'] ) )
-    {
-			$instance['wtheme'] = array_shift( explode( ' ', trim( strip_tags( $new_instance['wtheme'] ) ) ) );
-		}
-    else
-    {
-			$instance['wtheme'] = '';
-		}
-		$instance['limit'] = ( ! empty( $new_instance['limit'] ) ) ? intval( strip_tags( $new_instance['limit'] ) ) : 5;
-		$instance['admin_type'] = ( 'custom' == $new_instance['admin_type'] ) ? 'custom' : 'simple';
-		$instance['summary'] = isset( $new_instance['summary'] ) ? (bool) $new_instance['summary'] : false;
-		$instance['event_type_id'] = ( 0 === $new_instance['event_type_id'] ) ? null : $new_instance['event_type_id'];
-		$instance['city'] = isset( $new_instance['city'] ) ? (bool) $new_instance['city'] : false;
-		$instance['state'] = ( 'none' === $new_instance['state'] ) ? null : $new_instance['state'];
-		$instance['country'] = isset( $new_instance['country'] ) ? (bool) $new_instance['country'] : false;
-		$instance['alllink'] = isset( $new_instance['alllink'] ) ? (bool) $new_instance['alllink'] : false;
-		if ( isset( $new_instance['divider'] ) ) { $instance['divider'] = $new_instance['divider']; }
-		$instance['offset'] = ( ! empty( $new_instance['offset'] ) ) ? intval( strip_tags( $new_instance['offset'] ) ) : 0;
-		$instance['custom_display'] = ( ! empty( $new_instance['custom_display'] ) ) ? $new_instance['custom_display'] : '';
-		$instance['custom_filter'] = ( ! empty( $new_instance['custom_filter'] ) ) ? $new_instance['custom_filter'] : '';
+    // Processes widget options to be saved.
+    $instance = [];
+    $instance['title'] = !empty($new_instance['title']) ? strip_tags($new_instance['title']) : '';
+    if (!empty($new_instance['wtheme'])) {
+      $instance['wtheme'] = array_shift(explode(' ', trim(strip_tags($new_instance['wtheme']))));
+    } else {
+      $instance['wtheme'] = '';
+    }
+    $instance['limit'] = !empty($new_instance['limit']) ? intval(strip_tags($new_instance['limit'])) : 5;
+    $instance['admin_type'] = 'custom' == $new_instance['admin_type'] ? 'custom' : 'simple';
+    $instance['summary'] = isset($new_instance['summary']) ? (bool) $new_instance['summary'] : false;
+    $instance['event_type_id'] = 0 === $new_instance['event_type_id'] ? null : $new_instance['event_type_id'];
+    $instance['city'] = isset($new_instance['city']) ? (bool) $new_instance['city'] : false;
+    $instance['state'] = 'none' === $new_instance['state'] ? null : $new_instance['state'];
+    $instance['country'] = isset($new_instance['country']) ? (bool) $new_instance['country'] : false;
+    $instance['alllink'] = isset($new_instance['alllink']) ? (bool) $new_instance['alllink'] : false;
+    if (isset($new_instance['divider'])) {
+      $instance['divider'] = $new_instance['divider'];
+    }
+    $instance['offset'] = !empty($new_instance['offset']) ? intval(strip_tags($new_instance['offset'])) : 0;
+    $instance['custom_display'] = !empty($new_instance['custom_display']) ? $new_instance['custom_display'] : '';
+    $instance['custom_filter'] = !empty($new_instance['custom_filter']) ? $new_instance['custom_filter'] : '';
 
-		return $instance;
-	}
+    return $instance;
+  }
 
-	/**
-	 * Retrieve event location information.
-	 *
-	 * @param integer $eventId The ID of the event.
-	 * @param boolean $city Return city.
-	 * @param string  $state How to return state (abbreviate or full).
-	 * @param boolean $country Return country.
-	 */
-	public static function locationInfo( $eventId, $city = true, $state = null, $country = false )
+  /**
+   * Retrieve event location information.
+   *
+   * @param integer $eventId The ID of the event.
+   * @param boolean $city Return city.
+   * @param string  $state How to return state (abbreviate or full).
+   * @param boolean $country Return country.
+   */
+  public static function locationInfo($eventId, $city = true, $state = null, $country = false)
   {
-		// Get the API names for each field we're potentially showing
-		$field_map = array(
-			'city' => 'city',
-			'state' => ( 'abbreviate' === $state ) ? 'state_province_id.abbreviation' : 'state_province_id.name',
-			'country' => 'country_id.name',
-		);
+    // Get the API names for each field we're potentially showing
+    $field_map = [
+      'city' => 'city',
+      'state' => 'abbreviate' === $state ? 'state_province_id.abbreviation' : 'state_province_id.name',
+      'country' => 'country_id.name',
+    ];
 
-		// Ignore the fields we don't need
-		foreach ( $field_map as $disp_field => $api_field )
-    {
-			if ( ! $$disp_field )
-      {
-				unset( $field_map[ $disp_field ] );
-			}
-		}
+    // Ignore the fields we don't need
+    foreach ($field_map as $disp_field => $api_field) {
+      if (!$$disp_field) {
+        unset($field_map[$disp_field]);
+      }
+    }
 
-		try
-    {
-			$loc_block_id = civicrm_api3('Event', 'getvalue', array(
-				'return' => 'loc_block_id',
-				'id' => $eventId,
-				'is_show_location' => 1,
-			));
+    try {
+      $loc_block_id = civicrm_api3('Event', 'getvalue', [
+        'return' => 'loc_block_id',
+        'id' => $eventId,
+        'is_show_location' => 1,
+      ]);
 
-			if ( empty( $loc_block_id ) )
-      {
-				return $return;
-			}
-      
-			$address_id = civicrm_api3( 'LocBlock', 'getvalue', array(
-				'return' => 'address_id',
-				'id' => $loc_block_id,
-			));
+      if (empty($loc_block_id)) {
+        return $return;
+      }
 
-			if ( empty( $address_id ) )
-      {
-				return $return;
-			}
-      
-			$loc = civicrm_api3( 'Address', 'getsingle', array(
-				'id' => $address_id,
-				'return' => array_values( $field_map ),
-			));
+      $address_id = civicrm_api3('LocBlock', 'getvalue', [
+        'return' => 'address_id',
+        'id' => $loc_block_id,
+      ]);
 
-		}
-    catch (CiviCRM_API3_Exception $e)
-    {
-			return $return;
-		}
+      if (empty($address_id)) {
+        return $return;
+      }
 
-		foreach ( $field_map as $disp_field => $api_field )
-    {
-			$return[ $disp_field ] = $loc[ $api_field ];
-		}
-		return $return;
-	}
-  
-	/**
-	 * Prepare event date display.
-	 *
-	 * @param array  $event The event details.
-	 * @param string $classPrefix The beginning of the classname for the elements.
-	 */
-	public function dateFix( $event, $classPrefix )
+      $loc = civicrm_api3('Address', 'getsingle', [
+        'id' => $address_id,
+        'return' => array_values($field_map),
+      ]);
+    } catch (CiviCRM_API3_Exception $e) {
+      return $return;
+    }
+
+    foreach ($field_map as $disp_field => $api_field) {
+      $return[$disp_field] = $loc[$api_field];
+    }
+    return $return;
+  }
+
+  /**
+   * Prepare event date display.
+   *
+   * @param array  $event The event details.
+   * @param string $classPrefix The beginning of the classname for the elements.
+   */
+  public function dateFix($event, $classPrefix)
   {
-		$start = CRM_Utils_Array::value( 'start_date', $event );
-    $dateStart = explode(" ",$start);
-		$end = CRM_Utils_Array::value( 'end_date', $event );
-    $dateEnd = explode(" ",$end);
-		if($start)
-    {
+    $start = CRM_Utils_Array::value('start_date', $event);
+    $dateStart = explode(' ', $start);
+    $end = CRM_Utils_Array::value('end_date', $event);
+    $dateEnd = explode(' ', $end);
+    if ($start) {
       // org START date
       $dateStartORG = new DateTime($start);
       // Format the DateTime object into the new format
       $dateStartNEW = $dateStartORG->format($this->_dateFormat);
       // Format the DateTime object into the new format
       $timeStartNEW = $dateStartORG->format($this->_timeFormat);
-			$date  = '<div class="' . $classPrefix . '-start-date">Start:<br/>'.$dateStartNEW.'</div>';
-			$date .= '&nbsp;<div class="' . $classPrefix . '-start-time">'.$timeStartNEW.'</div><br/><br/>';
-			if ( $end ) {
+      $date = '<div class="' . $classPrefix . '-start-date">Start:<br/>' . $dateStartNEW . '</div>';
+      $date .= '&nbsp;<div class="' . $classPrefix . '-start-time">' . $timeStartNEW . '</div><br/><br/>';
+      if ($end) {
         // org END date
         $dateEndORG = new DateTime($end);
         // Format the DateTime object into the new format
@@ -902,170 +807,144 @@ HEREDOC;
         $timeEndNEW = $dateEndORG->format($this->_timeFormat);
         // if the DATES are not the same, display BOTH DATES
         // otherwise START DATE only.
-				if ( $dateStart[0] !== $dateEnd[0] ) {
-					$date .= '<div class="' . $classPrefix . '-start-date">End:</br>'.$dateEndNEW.'</div>';
-          $date .= ' <div class="' . $classPrefix . '-start-time">'.$timeEndNEW.'</div>';
-				} else {
-          $date .= ' <div class="' . $classPrefix . '-start-time">End:</br>'.$timeEndNEW.'</div>';
+        if ($dateStart[0] !== $dateEnd[0]) {
+          $date .= '<div class="' . $classPrefix . '-start-date">End:</br>' . $dateEndNEW . '</div>';
+          $date .= ' <div class="' . $classPrefix . '-start-time">' . $timeEndNEW . '</div>';
+        } else {
+          $date .= ' <div class="' . $classPrefix . '-start-time">End:</br>' . $timeEndNEW . '</div>';
         }
-			}
+      }
       return $date;
-		}
-	}
+    }
+  }
 
-	/**
-	 * Prepare event location display.
-	 *
-	 * @param array   $event The event details.
-	 * @param integer $id The event id.
-	 * @param array   $instance The widget instance.
-	 * @param string  $classPrefix The beginning of the classname for the elements.
-	 */
-	public static function locFix( $event, $id, $instance, $classPrefix )
+  /**
+   * Prepare event location display.
+   *
+   * @param array   $event The event details.
+   * @param integer $id The event id.
+   * @param array   $instance The widget instance.
+   * @param string  $classPrefix The beginning of the classname for the elements.
+   */
+  public static function locFix($event, $id, $instance, $classPrefix)
   {
-		$location = '';
-		$divider = ( isset($instance['divider'] ) ) ? $instance['divider'] : ', ';
+    $location = '';
+    $divider = isset($instance['divider']) ? $instance['divider'] : ', ';
 
-		if ( $instance['city'] || 'none' !== $instance['state'] || $instance['country'] )
-    {
-			$location = self::locationInfo( $id, $instance['city'], $instance['state'], $instance['country'] );
-			$lprint = array();
-			$prevLvalue = null;
-			foreach ( $location as $lfield => $lvalue )
-      {
-				if ( ! empty( $lvalue ) && $prevLvalue !== $lvalue )
-        {
-					$lprint[] = '<span class="' . $classPrefix . '-location-' . $lfield . '">' . $lvalue . '</span>';
-					$prevLvalue = $lvalue;
-				}
-			}
-			$location = ' <span class="' . $classPrefix . '-location">' . implode( $divider, $lprint ) . '</span> ';
-		}
-		return $location;
-	}
+    if ($instance['city'] || 'none' !== $instance['state'] || $instance['country']) {
+      $location = self::locationInfo($id, $instance['city'], $instance['state'], $instance['country']);
+      $lprint = [];
+      $prevLvalue = null;
+      foreach ($location as $lfield => $lvalue) {
+        if (!empty($lvalue) && $prevLvalue !== $lvalue) {
+          $lprint[] = '<span class="' . $classPrefix . '-location-' . $lfield . '">' . $lvalue . '</span>';
+          $prevLvalue = $lvalue;
+        }
+      }
+      $location = ' <span class="' . $classPrefix . '-location">' . implode($divider, $lprint) . '</span> ';
+    }
+    return $location;
+  }
 
-	/**
-	 * Prepare registration link display.
-	 *
-	 * @param array   $event The event details.
-	 * @param integer $id The event id.
-	 * @param string  $classPrefix The beginning of the classname for the elements.
-	 */
-	public static function regFix( $event, $id, $classPrefix, $moreInfo )
+  /**
+   * Prepare registration link display.
+   *
+   * @param array   $event The event details.
+   * @param integer $id The event id.
+   * @param string  $classPrefix The beginning of the classname for the elements.
+   */
+  public static function regFix($event, $id, $classPrefix, $moreInfo)
   {
-		$reg = '';
-		if ( CRM_Utils_Array::value( 'is_online_registration', $event )
-				&& (strtotime( CRM_Utils_Array::value( 'registration_start_date', $event ) ) <= time()
-					|| ! CRM_Utils_Array::value( 'registration_start_date', $event ) )
-				&& ( strtotime( CRM_Utils_Array::value( 'registration_end_date', $event ) ) > time()
-					|| ! CRM_Utils_Array::value( 'registration_end_date', $event ) ) )
-    {
-			$reglink = CRM_Utils_System::url( 'civicrm/event/register', "reset=1&id=$id" );
+    $reg = '';
+    if (
+      CRM_Utils_Array::value('is_online_registration', $event) &&
+      (strtotime(CRM_Utils_Array::value('registration_start_date', $event)) <= time() || !CRM_Utils_Array::value('registration_start_date', $event)) &&
+      (strtotime(CRM_Utils_Array::value('registration_end_date', $event)) > time() || !CRM_Utils_Array::value('registration_end_date', $event))
+    ) {
+      $reglink = CRM_Utils_System::url('civicrm/event/register', "reset=1&id=$id");
       $reg .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
-      $reg  = "<div class='civievent-widget-button-section '>";
-      $reg .= " <a href='".$reglink."' title='Register Now' class='button btn'><span>".CRM_Utils_Array::value( 'registration_link_text', $event, ts( 'Register' ) )."</a>";
-      $reg .= " <a href='".$moreInfo."' title='Read More ....' class='button btn'><span>Read More ....</span></a>";
-      $reg .= "</div>";
+      $reg = "<div class='civievent-widget-button-section '>";
+      $reg .= " <a href='" . $reglink . "' title='Register Now' class='button btn'><span>" . CRM_Utils_Array::value('registration_link_text', $event, ts('Register')) . '</a>';
+      $reg .= " <a href='" . $moreInfo . "' title='Read More ....' class='button btn'><span>Read More ....</span></a>";
+      $reg .= '</div>';
       $reg .= "<div class='civievent-widget-spacer'>&nbsp;</div>";
-		}
-		return $reg;
-	}
+    }
+    return $reg;
+  }
 
-	/**
-	 * Retrieve the fields available for events.
-	 *
-	 * @return array
-	 *   The event fields.
-	 */
-	public function getFields()
+  /**
+   * Retrieve the fields available for events.
+   *
+   * @return array
+   *   The event fields.
+   */
+  public function getFields()
   {
-		if ( empty( $this->_eventFields ) )
-    {
-			$return = array();
-			try
-      {
-				$fields = civicrm_api3( 'Event', 'getfields', array( 'api_action' => 'get' ) );
-				if ( ! empty( $fields['values'] ) )
-        {
-					foreach ( $fields['values'] as $name => $info )
-          {
-						$prefix = empty($info['groupTitle']) ? '' : $info['groupTitle'] . ': ';
-						$return[ $name ] = $prefix . CRM_Utils_Array::value( 'title', $info, $name );
-						if ( $name != CRM_Utils_Array::value( 'name', $info, $name ) )
-            {
-							$return[ $info['name'] ] = $prefix . CRM_Utils_Array::value( 'title', $info, $name );
-						}
-					}
-				}
-			}
-      catch (CiviCRM_API3_Exception $e)
-      {
-				CRM_Core_Error::debug_log_message( $e->getMessage() );
-			}
-			$return = array_merge( $return, self::getCustomDisplayTitles() );
-			asort( $return );
-			$this->_eventFields = $return;
-		}
-		return $this->_eventFields;
-	}
+    if (empty($this->_eventFields)) {
+      $return = [];
+      try {
+        $fields = civicrm_api3('Event', 'getfields', ['api_action' => 'get']);
+        if (!empty($fields['values'])) {
+          foreach ($fields['values'] as $name => $info) {
+            $prefix = empty($info['groupTitle']) ? '' : $info['groupTitle'] . ': ';
+            $return[$name] = $prefix . CRM_Utils_Array::value('title', $info, $name);
+            if ($name != CRM_Utils_Array::value('name', $info, $name)) {
+              $return[$info['name']] = $prefix . CRM_Utils_Array::value('title', $info, $name);
+            }
+          }
+        }
+      } catch (CiviCRM_API3_Exception $e) {
+        CRM_Core_Error::debug_log_message($e->getMessage());
+      }
+      $return = array_merge($return, self::getCustomDisplayTitles());
+      asort($return);
+      $this->_eventFields = $return;
+    }
+    return $this->_eventFields;
+  }
 
-	public static function getCustomDisplayTitles()
+  public static function getCustomDisplayTitles()
   {
-		return array(
-			'event_title_infolink' => __( 'Event Title (linked to info page)', 'civievent-widget' ),
-			'event_title_reglink' => __( 'Event Title (linked to registration)', 'civievent-widget' ),
-			'registration_link_text_reglink' => __( 'Registration Link', 'civievent-widget' ),
-		);
-	}
+    return [
+      'event_title_infolink' => __('Event Title (linked to info page)', 'civievent-widget'),
+      'event_title_reglink' => __('Event Title (linked to registration)', 'civievent-widget'),
+      'registration_link_text_reglink' => __('Registration Link', 'civievent-widget'),
+    ];
+  }
 
-	public static function getCustomDisplayField( $field, $event = array() )
+  public static function getCustomDisplayField($field, $event = [])
   {
-		$reqs = array(
-			'event_title_infolink' => array(
-				'title',
-				'id',
-			),
-			'event_title_reglink' => array(
-				'title',
-				'id',
-			),
-			'registration_link_text_reglink' => array(
-				'registration_link_text',
-				'id',
-			),
-		);
+    $reqs = [
+      'event_title_infolink' => ['title', 'id'],
+      'event_title_reglink' => ['title', 'id'],
+      'registration_link_text_reglink' => ['registration_link_text', 'id'],
+    ];
 
-		if ( array_key_exists( $field, $reqs ) )
-    {
-			// Return the required fields.
-			if ( empty( $event ) )
-      {
-				return $reqs[ $field ];
-			}
+    if (array_key_exists($field, $reqs)) {
+      // Return the required fields.
+      if (empty($event)) {
+        return $reqs[$field];
+      }
 
-			// Make sure required fields are in $event.
-			$r = array_flip( $reqs[ $field ] );
-			if ( array_intersect_key( $r, $event ) !== $r )
-      {
-				return;
-			}
-		}
-    else
-    {
-			return;
-		}
+      // Make sure required fields are in $event.
+      $r = array_flip($reqs[$field]);
+      if (array_intersect_key($r, $event) !== $r) {
+        return;
+      }
+    } else {
+      return;
+    }
 
-		// What should be returned for each custom display field.
-		switch ( $field )
-    {
-			case 'event_title_infolink':
-				return CRM_Utils_System::href( $event['event_title'], 'civicrm/event/info', "reset=1&id={$event['id']}", true, null, true, true );
+    // What should be returned for each custom display field.
+    switch ($field) {
+      case 'event_title_infolink':
+        return CRM_Utils_System::href($event['event_title'], 'civicrm/event/info', "reset=1&id={$event['id']}", true, null, true, true);
 
-			case 'event_title_reglink':
-				return CRM_Utils_System::href( $event['event_title'], 'civicrm/event/register', "reset=1&id={$event['id']}", true, null, true, true );
+      case 'event_title_reglink':
+        return CRM_Utils_System::href($event['event_title'], 'civicrm/event/register', "reset=1&id={$event['id']}", true, null, true, true);
 
-			case 'registration_link_text_reglink':
-				return CRM_Utils_System::href( $event['registration_link_text'], 'civicrm/event/register', "reset=1&id={$event['id']}", true, null, true, true );
-		}
-	}
+      case 'registration_link_text_reglink':
+        return CRM_Utils_System::href($event['registration_link_text'], 'civicrm/event/register', "reset=1&id={$event['id']}", true, null, true, true);
+    }
+  }
 }
