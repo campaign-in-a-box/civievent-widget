@@ -23,9 +23,86 @@ This widget is a basic, flexible listing of upcoming events that are marked as p
 
 This widget displays a single public event from CiviCRM.  By default, it will display the first event from the current day or the future, or you can set an offset to skip one or more and display the second or third upcoming event.  You may display the location if "Show location" is enabled on the event.
 
-= Shortcodes =
+= Template Shortcodes =
 
-Both widgets are available to be inserted into the body of a post using a shortcode.  Use the `[civievent_widget]` shortcode for the events listing and the `[civievent_single_widget]` shortcode for the single next (or offset) event.  The available parameters for the shortcodes are as follows:
+Both shortcodes support a **template mode**: place your own HTML between the opening and closing tags and use [Smarty](https://smarty.net/) `{$event.*}` variables to insert event data.  No server-side files need to be edited.  Because the engine is CiviCRM's built-in Smarty instance, you can use the full Smarty syntax — `{if}`, `{foreach}`, custom modifiers, etc.
+
+**Available variables:**
+
+*Core fields*
+
+| Variable | Description |
+|---|---|
+| `{$event.id}` | Event ID |
+| `{$event.title}` | Event title (HTML-escaped) |
+| `{$event.summary}` | Event summary (HTML allowed) |
+| `{$event.description}` | Full event description (HTML allowed) |
+| `{$event.register_url}` | URL of the online registration page |
+| `{$event.registration_link_text}` | Registration button label from CiviCRM |
+| `{$event.image}` | Image URL (empty if no image set) |
+| `{$event.image_tag}` | Ready-to-use `<img>` tag (empty if no image) |
+| `{$event.date_start}` | Formatted start date |
+| `{$event.time_start}` | Formatted start time |
+| `{$event.date_end}` | Formatted end date (blank when same day as start) |
+| `{$event.time_end}` | Formatted end time |
+| `{$event.index}` | 0-based position in the list (list widget only) |
+| `{$event.class}` | `"even"` or `"odd"` (list widget only) |
+| `{$event.register_buttons}` | Register + Read More buttons, respecting registration open/close dates; empty if registration is closed or not enabled |
+
+*Calendar links*
+
+| Variable | Description |
+|---|---|
+| `{$event.ical_url}` | iCal / .ics download URL |
+| `{$event.gcal_url}` | Google Calendar "add event" URL (includes location when available) |
+| `{$event.calendar_links}` | Pre-built iCal + Google Calendar buttons |
+
+*Social sharing*
+
+| Variable | Description |
+|---|---|
+| `{$event.share_twitter}` | X / Twitter share link |
+| `{$event.share_facebook}` | Facebook share link |
+| `{$event.share_linkedin}` | LinkedIn share link |
+| `{$event.share_email}` | Email share link |
+| `{$event.social_links}` | Pre-built row with all four share links |
+
+*Location & map* — only populated when the event has "Show location" enabled in CiviCRM
+
+| Variable | Description |
+|---|---|
+| `{$event.location_address}` | Street address |
+| `{$event.location_city}` | City |
+| `{$event.location_state}` | State / province abbreviation |
+| `{$event.location_country}` | Country name |
+| `{$event.location_postal}` | Postal / zip code |
+| `{$event.location_full}` | Full address on one line |
+| `{$event.map_url}` | Google Maps search URL |
+| `{$event.map_link}` | Pre-built link to Google Maps |
+
+**Event list — card layout (works great in Elementor / Astra):**
+
+```
+[civievent_widget]
+see templates/list*.html for examples
+[/civievent_widget]
+```
+
+**Single event hero (works great in Elementor / Astra):**
+
+Paste this into an Elementor Shortcode widget on your event detail page.
+
+```
+[civievent_single_widget]
+see templates/single*.html for examples
+[/civievent_single_widget]
+```
+
+When no inner template is provided the widgets use a built-in default template that reproduces the original layout.
+
+= Shortcodes (built-in layout) =
+
+Both widgets are also available without a template.  Use the `[civievent_widget]` shortcode for the events listing and the `[civievent_single_widget]` shortcode for the single next (or offset) event.  The available parameters are as follows:
 
 - "title="Your Title""
   The widget title (default: "Upcoming Events" for the list widget, or the event's title for the single widget).
@@ -82,12 +159,12 @@ Both widgets are available to be inserted into the body of a post using a shortc
   (List widget only.)
 - "event_type_id=3"
   (default: show all event).
-  Display Event with event type id 3 
+  Display Event with event type id 3
   (only work with admin_type="simple".)
-- "metatags=yes"
-  (default: yes).
-  add open graph information to the head of the HTML, including "meta name=description" and "meta property=og:XYZ"
-  (Single widget only.)
+- "image_field="cibapp_Image_Link""
+  The label of the CiviCRM custom field that holds the event image URL (default: "cibapp_Image_Link").
+  Set this if your site uses a different custom field label for event images.
+  The field must be a custom field on the Event entity.
 
 == Installation ==
 
