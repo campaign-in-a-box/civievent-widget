@@ -66,6 +66,7 @@ function civievent_single_widget_shortcode($atts, $content = null)
  *  - custom_display string JSON of custom display options (see documentation).
  *  - custom_filter string JSON of custom filter options (see documentation).
  *  - event_type_id int filter the event listing to a single event type
+ *  - empty_message string text shown when there are no events (default: "No upcoming events.")
  *
  * All booleans default to false; any value makes them true.
  *
@@ -97,6 +98,10 @@ function civievent_widget_shortcode($atts, $content = null)
     $event_type_id = isset($atts["event_type_id"])
         ? intval($atts["event_type_id"])
         : 0;
+    $empty_message =
+        isset($atts["empty_message"]) && $atts["empty_message"] !== ""
+            ? sanitize_text_field($atts["empty_message"])
+            : __("No upcoming events.", "cib-civievent-widget");
     $image_field_label = !empty($atts["image_field"])
         ? sanitize_text_field($atts["image_field"])
         : "cibapp_Image_Link";
@@ -145,47 +150,51 @@ function civievent_widget_shortcode($atts, $content = null)
         return "";
     }
 
-    if (empty($events)) {
-        return "";
-    }
-
     $date_format = get_option("date_format");
     $time_format = get_option("time_format");
 
     wp_enqueue_style("civievent-widget-Stylesheet");
 
-    $needs_location = cib_template_needs_location($template);
-
     $wtheme = sanitize_html_class(
         !empty($atts["wtheme"]) ? $atts["wtheme"] : "stripe",
     );
     $title = !empty($atts["title"]) ? esc_html($atts["title"]) : "";
-    $event_page = !empty($atts["url"])
-        ? $atts["url"]
-        : "/civicrm/event/info?reset=1&id=";
 
     $html = '<div class="civievent-widget civievent-widget-' . $wtheme . '">';
     if ($title) {
         $html .= '<h2 class="title civievent-widget-title">' . $title . "</h2>";
     }
     $html .= '<div class="civievent-widget-list">';
-    $index = 0;
-    foreach ($events as $event) {
-        $location = $needs_location
-            ? cib_fetch_event_location($event["id"])
-            : [];
-        $html .= cib_apply_event_template(
-            $template,
-            $event,
-            $index,
-            $image_field,
-            $date_format,
-            $time_format,
-            $location,
-            $event_page,
-        );
-        $index++;
+
+    if (empty($events)) {
+        $html .=
+            '<p class="civievent-widget-empty">' .
+            esc_html($empty_message) .
+            "</p>";
+    } else {
+        $needs_location = cib_template_needs_location($template);
+        $event_page = !empty($atts["url"])
+            ? $atts["url"]
+            : "/civicrm/event/info?reset=1&id=";
+        $index = 0;
+        foreach ($events as $event) {
+            $location = $needs_location
+                ? cib_fetch_event_location($event["id"])
+                : [];
+            $html .= cib_apply_event_template(
+                $template,
+                $event,
+                $index,
+                $image_field,
+                $date_format,
+                $time_format,
+                $location,
+                $event_page,
+            );
+            $index++;
+        }
     }
+
     $html .= "</div></div>";
 
     return $html;
