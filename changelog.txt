@@ -1,5 +1,13 @@
 === CiviEvent Widget Changes ===
 
+= 5.2 =
+* **`[civievent_widget]` `limit`:** default is **100** for both list and **`style="calendar-month"`** (previously the list default was 5).
+* Shortcode attributes **`default_image`** (single URL) and **`default_images`** (pipe- or newline-separated URLs) supply placeholder images when the event has no Civi image; multi-URL lists are distributed per event via a stable hash. Filter: `cib_civievent_default_image_pool`. Template variable `{$event.image_is_default}`; placeholder images use `<img class="civievent-widget-image-default">`.
+* Shortcode attribute **`upcoming_only`** (default **true**): when true, the widget only loads events whose start date is today or later. Set to **`0`**, **`false`**, **`no`**, or **`off`** to include past events. Use that with **`style="calendar-month"`** so the grid can show prior months; list layout defaults stay upcoming-only.
+* New shortcode option: `style="calendar-month"` on `[civievent_widget]` renders a month grid with prev/next and month/year controls; click a day to open a dialog with event details (register / more info).
+* Refactor: `[civievent_widget]` uses one Smarty render path for both default list and **`style="calendar-month"`**; list layout is `templates/list.html` with `{foreach from=$events}`. The calendar grid script reads **`$payload_json`** (built in PHP alongside the rest of the template context). Month/year bounds are computed in the embedded script from the parsed JSON’s **`events`** array.
+* **Breaking if you used a custom inner template on `[civievent_widget]`:** inner content must be a **full** widget template (like the default `templates/list.html`), not a single-card fragment. Loop with `{foreach from=$events item=event}` and use `{$event.*}` inside the loop.
+
 = 5.0 =
 * Complete rewrite - no single events, just event list
 * Template engine: [civievent_widget]...[/civievent_widget] and [civievent_single_widget]...[/civievent_single_widget] now accept inner HTML templates with {event.*} tokens — no server edits needed to customise the layout

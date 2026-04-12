@@ -1,0 +1,646 @@
+{* Calendar month: `$events` matches list.html; grid script reads JSON from `$payload_json`. *}
+{literal}
+<style>
+/* CIB CiviEvent calendar-month widget */
+
+.civievent-widget-calendar {
+  max-width: 100%;
+}
+
+.civievent-widget-calendar .civievent-cal-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.civievent-widget-calendar .civievent-cal-caption {
+  flex: 1 1 auto;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  min-height: 1.5em;
+}
+
+.civievent-widget-calendar .civievent-cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.civievent-widget-calendar .civievent-cal-prev,
+.civievent-widget-calendar .civievent-cal-next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: black;
+}
+
+.civievent-widget-calendar .civievent-cal-prev:hover,
+.civievent-widget-calendar .civievent-cal-next:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.civievent-widget-calendar .civievent-cal-selects {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.civievent-widget-calendar .civievent-cal-selects label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.civievent-widget-calendar .civievent-cal-month-select,
+.civievent-widget-calendar .civievent-cal-year-select {
+  min-width: 7rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: #fff;
+}
+
+.civievent-widget-calendar .civievent-cal-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.civievent-widget-calendar .civievent-cal-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.85rem;
+}
+
+.civievent-widget-calendar .civievent-cal-table th {
+  padding: 0.4rem 0.2rem;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.civievent-widget-calendar .civievent-cal-day {
+  vertical-align: top;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  height: 5.5rem;
+  padding: 0;
+  width: 14.28%;
+}
+
+.civievent-widget-calendar .civievent-cal-day-outside {
+  background: rgba(0, 0, 0, 0.02);
+  opacity: 0.65;
+}
+
+.civievent-widget-calendar .civievent-cal-day-inner,
+.civievent-widget-calendar .civievent-cal-day-btn {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 5rem;
+  margin: 0;
+  padding: 0.25rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  font: inherit;
+  color: inherit;
+}
+
+.civievent-widget-calendar .civievent-cal-day-btn {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+}
+
+.civievent-widget-calendar .civievent-cal-day-btn:hover,
+.civievent-widget-calendar .civievent-cal-day-btn:focus-visible {
+  background: rgba(59, 130, 246, 0.08);
+  outline: none;
+}
+
+.civievent-widget-calendar .civievent-cal-day-has-events {
+  cursor: pointer;
+}
+
+.civievent-widget-calendar .civievent-cal-day-num {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.civievent-widget-calendar .civievent-cal-day-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.civievent-widget-calendar .civievent-cal-day-events li {
+  margin: 0;
+  padding: 0;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: rgba(0, 0, 0, 0.75);
+  word-break: break-word;
+}
+
+.civievent-widget-calendar .civievent-cal-more {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* Modal */
+.civievent-widget-calendar dialog.civievent-cal-dialog {
+  max-width: min(560px, 96vw);
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.civievent-widget-calendar dialog.civievent-cal-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.civievent-widget-calendar .civievent-cal-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.civievent-widget-calendar .civievent-cal-dialog-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.civievent-widget-calendar .civievent-cal-dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.civievent-widget-calendar .civievent-cal-dialog-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.civievent-widget-calendar .civievent-cal-dialog-body {
+  padding: 1rem;
+  max-height: min(70vh, 640px);
+  overflow-y: auto;
+}
+
+.civievent-widget-calendar .civievent-cal-dialog-body > * + * {
+  margin-top: 1rem;
+}
+
+.civievent-widget-calendar .civievent-cal-popup-chunk .elementor-widget-container {
+  margin-bottom: 0;
+}
+
+</style>
+{/literal}
+<div class="civievent-widget civievent-widget-calendar civievent-widget-{$wtheme|escape:'html'}" id="{$uid|escape:'html'}" data-civievent-calendar data-civievent-more-fmt="+%d more">
+  {if $title}
+    <h2 class="title civievent-widget-title">{$title|escape:'html'}</h2>
+  {/if}
+  {if $events|@count eq 0}
+    <p class="civievent-widget-empty">{$empty_message|escape:'html'}</p>
+  {/if}
+
+  <div class="civievent-cal-toolbar">
+    <div class="civievent-cal-nav">
+      <button type="button" class="civievent-cal-prev" aria-label="Previous month"><span aria-hidden="true">&#8249;</span></button>
+      <button type="button" class="civievent-cal-next" aria-label="Next month"><span aria-hidden="true">&#8250;</span></button>
+    </div>
+    <div class="civievent-cal-caption civievent-cal-month-label"></div>
+    <div class="civievent-cal-selects">
+      <label for="{$uid|escape:'html'}-month">Month
+        <select id="{$uid|escape:'html'}-month" class="civievent-cal-month-select" aria-label="Month"></select>
+      </label>
+      <label for="{$uid|escape:'html'}-year">Year
+        <select id="{$uid|escape:'html'}-year" class="civievent-cal-year-select" aria-label="Year"></select>
+      </label>
+    </div>
+  </div>
+
+  <div class="civievent-cal-table-wrap">
+    <table class="civievent-cal-table" role="grid">
+      <thead class="civievent-cal-thead"></thead>
+      <tbody class="civievent-cal-body"></tbody>
+    </table>
+  </div>
+
+  <script type="application/json" id="{$uid|escape:'html'}-data">{$payload_json nofilter}</script>
+
+  <dialog class="civievent-cal-dialog" aria-labelledby="{$uid|escape:'html'}-dlg-title">
+    <div class="civievent-cal-dialog-header">
+      <h3 id="{$uid|escape:'html'}-dlg-title" class="civievent-cal-dialog-title">Event details</h3>
+      <button type="button" class="civievent-cal-dialog-close" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    </div>
+    <div class="civievent-cal-dialog-body"></div>
+  </dialog>
+
+  <div class="civievent-cal-popups" hidden>
+    {foreach from=$events item=event}
+      <div id="{$uid|escape:'html'}-popup-{$event.id}" class="civievent-cal-popup-chunk">
+        <div class="elementor-widget-container" style="background-color:transparent; border-radius:12px; box-shadow:0 2px 16px rgba(0,0,0,.08); overflow:hidden; margin-bottom:24px; display:flex; flex-wrap:wrap;">
+          <div class="elementor-image" style="flex:0 0 200px; min-height:150px; overflow:hidden;">
+            <a href="{$event.url}" style="display:block; height:100%;">{$event.image_tag nofilter}</a>
+          </div>
+
+          <div class="elementor-text-editor" style="flex:1; min-width:220px; padding:20px 24px; display:flex; flex-direction:column; gap:12px;">
+            <div>
+              <p class="elementor-icon-box-title" style="margin:0 0 4px; font-size:.8em; font-weight:700; text-transform:uppercase; letter-spacing:.05em;">
+                {$event.date_start} &bull; {$event.time_start}
+                {if $event.time_end} - {$event.time_end}{/if}
+              </p>
+
+              <h3 class="elementor-heading-title" style="margin:0 0 6px; font-size:1.25em;">
+                <a href="{$event.url}" style="color:inherit; text-decoration:none;">{$event.title}</a>
+              </h3>
+
+              {if $event.location_full}
+                <p style="margin:0 0 4px; font-size:.9em; opacity:0.8;">{$event.location_full}</p>
+              {/if}
+
+              {if $event.summary}
+                <div style="font-size:.9em; line-height:1.5;">{$event.summary|nl2br}</div>
+              {/if}
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              {if $event.register_url}
+                <a href="{$event.register_url}" class="button btn"><span>{$event.registration_link_text}</span></a>
+              {/if}
+              <a href="{$event.url}" class="button btn"><span>More info</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/foreach}
+  </div>
+{literal}
+<script>
+/**
+ * CIB CiviEvent calendar-month widget: month grid, navigation, event dialog.
+ */
+(function () {
+  "use strict";
+
+  function pad2(n) {
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  /** @param {Date} dt */
+  function localDateKey(dt) {
+    return (
+      dt.getFullYear() +
+      "-" +
+      pad2(dt.getMonth() + 1) +
+      "-" +
+      pad2(dt.getDate())
+    );
+  }
+
+  /**
+   * @param {number} year
+   * @param {number} month 0-11
+   * @param {number} startOfWeek WP: 0=Sun .. 6=Sat
+   */
+  function buildMonthGrid(year, month, startOfWeek) {
+    var first = new Date(year, month, 1);
+    var start = new Date(first);
+    var dow = (first.getDay() - startOfWeek + 7) % 7;
+    start.setDate(first.getDate() - dow);
+
+    var weeks = [];
+    var cur = new Date(start);
+    for (var w = 0; w < 6; w++) {
+      var row = [];
+      for (var d = 0; d < 7; d++) {
+        row.push(new Date(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+      weeks.push(row);
+    }
+    return weeks;
+  }
+
+  /**
+   * @param {Array<{id:number,start:string,title:string}>} events
+   * @returns {Record<string, number[]>}
+   */
+  function indexByDay(events) {
+    var map = {};
+    for (var i = 0; i < events.length; i++) {
+      var ev = events[i];
+      if (!ev.start) continue;
+      var t = ev.start.indexOf("T") >= 0 ? ev.start : ev.start.replace(" ", "T");
+      var dt = new Date(t);
+      if (isNaN(dt.getTime())) continue;
+      var key = localDateKey(dt);
+      if (!map[key]) map[key] = [];
+      map[key].push(ev.id);
+    }
+    return map;
+  }
+
+  function initCalendar(root) {
+    var script = root.querySelector('script[type="application/json"]');
+    if (!script || !script.textContent) return;
+
+    var payload;
+    try {
+      payload = JSON.parse(script.textContent);
+    } catch (e) {
+      return;
+    }
+
+    var events = payload.events || [];
+    var byDay = indexByDay(events);
+
+    var years = [new Date().getFullYear()];
+    for (var yi = 0; yi < events.length; yi++) {
+      var st = events[yi].start;
+      if (st) {
+        var yPart = parseInt(String(st).slice(0, 4), 10);
+        if (!isNaN(yPart)) {
+          years.push(yPart);
+        }
+      }
+    }
+    var minYear = Math.min.apply(null, years) - 1;
+    var maxYear = Math.max.apply(null, years) + 2;
+    var startOfWeek =
+      payload.startOfWeek != null
+        ? parseInt(payload.startOfWeek, 10)
+        : 0;
+    var moreFmt =
+      root.getAttribute("data-civievent-more-fmt") || "+%d more";
+
+    var now = new Date();
+    var viewYear = now.getFullYear();
+    var viewMonth = now.getMonth();
+
+    var monthSel = root.querySelector(".civievent-cal-month-select");
+    var yearSel = root.querySelector(".civievent-cal-year-select");
+    var tbody = root.querySelector(".civievent-cal-body");
+    var labelEl = root.querySelector(".civievent-cal-month-label");
+    var prevBtn = root.querySelector(".civievent-cal-prev");
+    var nextBtn = root.querySelector(".civievent-cal-next");
+    var dialog = root.querySelector("dialog.civievent-cal-dialog");
+    var dialogBody = dialog ? dialog.querySelector(".civievent-cal-dialog-body") : null;
+    var dialogClose = dialog ? dialog.querySelector(".civievent-cal-dialog-close") : null;
+
+    if (!monthSel || !yearSel || !tbody) return;
+
+    function fillYearOptions() {
+      yearSel.innerHTML = "";
+      for (var y = minYear; y <= maxYear; y++) {
+        var opt = document.createElement("option");
+        opt.value = String(y);
+        opt.textContent = String(y);
+        yearSel.appendChild(opt);
+      }
+    }
+
+    function fillMonthOptions() {
+      monthSel.innerHTML = "";
+      var fmt = new Intl.DateTimeFormat(undefined, { month: "long" });
+      for (var m = 0; m < 12; m++) {
+        var opt = document.createElement("option");
+        opt.value = String(m);
+        opt.textContent = fmt.format(new Date(2000, m, 1));
+        monthSel.appendChild(opt);
+      }
+    }
+
+    function syncSelects() {
+      yearSel.value = String(viewYear);
+      monthSel.value = String(viewMonth);
+      if (labelEl) {
+        var longFmt = new Intl.DateTimeFormat(undefined, {
+          month: "long",
+          year: "numeric",
+        });
+        labelEl.textContent = longFmt.format(new Date(viewYear, viewMonth, 1));
+      }
+    }
+
+    function render() {
+      syncSelects();
+      tbody.innerHTML = "";
+
+      var weekdayFmt = new Intl.DateTimeFormat(undefined, { weekday: "short" });
+      var thead = root.querySelector(".civievent-cal-thead");
+      var grid = buildMonthGrid(viewYear, viewMonth, startOfWeek);
+      if (thead) {
+        thead.innerHTML = "";
+        var hr = document.createElement("tr");
+        for (var i = 0; i < 7; i++) {
+          var th = document.createElement("th");
+          th.scope = "col";
+          th.textContent = weekdayFmt.format(grid[0][i]);
+          hr.appendChild(th);
+        }
+        thead.appendChild(hr);
+      }
+
+      for (var w = 0; w < grid.length; w++) {
+        var tr = document.createElement("tr");
+        for (var d = 0; d < 7; d++) {
+          var cellDate = grid[w][d];
+          var td = document.createElement("td");
+          var inMonth =
+            cellDate.getMonth() === viewMonth &&
+            cellDate.getFullYear() === viewYear;
+          td.className = "civievent-cal-day";
+          if (!inMonth) td.classList.add("civievent-cal-day-outside");
+
+          var dayNum = cellDate.getDate();
+          var key = localDateKey(cellDate);
+          var ids = byDay[key] || [];
+
+          var titles = [];
+          for (var ti = 0; ti < events.length; ti++) {
+            if (ids.indexOf(events[ti].id) >= 0) titles.push(events[ti].title);
+          }
+
+          if (ids.length === 0) {
+            var emptyWrap = document.createElement("div");
+            emptyWrap.className = "civievent-cal-day-inner civievent-cal-day-empty";
+            var emptyNum = document.createElement("span");
+            emptyNum.className = "civievent-cal-day-num";
+            emptyNum.textContent = String(dayNum);
+            emptyWrap.appendChild(emptyNum);
+            td.appendChild(emptyWrap);
+          } else {
+            var dayBtn = document.createElement("button");
+            dayBtn.type = "button";
+            dayBtn.className = "civievent-cal-day-btn civievent-cal-day-has-events";
+            dayBtn.setAttribute("data-date-key", key);
+            dayBtn.setAttribute(
+              "aria-label",
+              dayNum + (titles.length ? ". " + titles.join("; ") : ""),
+            );
+
+            var numSpan = document.createElement("span");
+            numSpan.className = "civievent-cal-day-num";
+            numSpan.textContent = String(dayNum);
+            dayBtn.appendChild(numSpan);
+
+            var ul = document.createElement("ul");
+            ul.className = "civievent-cal-day-events";
+            var maxShow = 2;
+            for (var k = 0; k < ids.length && k < maxShow; k++) {
+              var eid = ids[k];
+              var title = "";
+              for (var e = 0; e < events.length; e++) {
+                if (events[e].id === eid) {
+                  title = events[e].title;
+                  break;
+                }
+              }
+              var li = document.createElement("li");
+              li.textContent = title.length > 40 ? title.slice(0, 37) + "…" : title;
+              ul.appendChild(li);
+            }
+            if (ids.length > maxShow) {
+              var more = document.createElement("li");
+              more.className = "civievent-cal-more";
+              more.textContent = moreFmt.replace("%d", String(ids.length - maxShow));
+              ul.appendChild(more);
+            }
+            dayBtn.appendChild(ul);
+
+            (function (eventIds) {
+              dayBtn.addEventListener("click", function () {
+                if (!dialog || !dialogBody) return;
+                dialogBody.innerHTML = "";
+                var uid = root.id || "";
+                for (var x = 0; x < eventIds.length; x++) {
+                  var pid = uid + "-popup-" + eventIds[x];
+                  var src = document.getElementById(pid);
+                  if (src) {
+                    dialogBody.appendChild(src.cloneNode(true));
+                  }
+                }
+                if (typeof dialog.showModal === "function") {
+                  dialog.showModal();
+                }
+              });
+            })(ids.slice());
+
+            td.appendChild(dayBtn);
+          }
+
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    fillYearOptions();
+    fillMonthOptions();
+
+    monthSel.addEventListener("change", function () {
+      viewMonth = parseInt(monthSel.value, 10);
+      render();
+    });
+    yearSel.addEventListener("change", function () {
+      viewYear = parseInt(yearSel.value, 10);
+      render();
+    });
+    if (prevBtn) {
+      prevBtn.addEventListener("click", function () {
+        if (viewYear <= minYear && viewMonth <= 0) {
+          return;
+        }
+        viewMonth--;
+        if (viewMonth < 0) {
+          viewMonth = 11;
+          viewYear--;
+        }
+        render();
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        if (viewYear >= maxYear && viewMonth >= 11) {
+          return;
+        }
+        viewMonth++;
+        if (viewMonth > 11) {
+          viewMonth = 0;
+          viewYear++;
+        }
+        render();
+      });
+    }
+
+    if (dialogClose && dialog) {
+      dialogClose.addEventListener("click", function () {
+        dialog.close();
+      });
+    }
+    if (dialog) {
+      dialog.addEventListener("click", function (e) {
+        if (e.target === dialog) dialog.close();
+      });
+    }
+
+    syncSelects();
+    render();
+  }
+
+  function boot() {
+    var nodes = document.querySelectorAll("[data-civievent-calendar]");
+    for (var i = 0; i < nodes.length; i++) {
+      initCalendar(nodes[i]);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
+</script>
+{/literal}
+</div>

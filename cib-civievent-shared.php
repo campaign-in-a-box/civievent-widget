@@ -100,12 +100,25 @@ function cib_resolve_image_field($label)
 /**
  * Return true if $template uses any variable that requires a location API lookup.
  *
- * @param string $template Smarty template string.
+ * Covers address fields (`location_*`), map (`map_*`), and Google Calendar URLs
+ * (`gcal_url`, `calendar_links`), which embed venue text when the event shows location.
+ *
+ * @param string $template Smarty/Twig-style template source string.
  * @return bool
  */
 function cib_template_needs_location($template)
 {
-    foreach (['$event.location_', '$event.map_'] as $needle) {
+    static $needles = [
+        '$event.location_',
+        '$event.map_',
+        "event.location_",
+        "event.map_",
+        '{$event.location_',
+        '{$event.map_',
+        "gcal_url",
+        "calendar_links",
+    ];
+    foreach ($needles as $needle) {
         if (strpos($template, $needle) !== false) {
             return true;
         }
@@ -114,63 +127,64 @@ function cib_template_needs_location($template)
 }
 
 /**
- * Render a Smarty template string for one CiviCRM event.
+ * Parse default placeholder image URL(s) from shortcode attributes.
  *
- * The template receives a single Smarty variable `$event` whose keys are:
+ * - `default_image` — single absolute URL.
+ * - `default_images` — several URLs separated by `|` or newlines (use when URLs contain commas).
  *
- *   Core fields
- *   $event.id                     – event ID
- *   $event.title                  – event title (HTML-escaped)
- *   $event.summary                – event summary (safe HTML allowed)
- *   $event.description            – event description (safe HTML allowed)
- *   $event.url                    – URL of the event detail page
- *   $event.register_url           – URL of the online registration page
- *   $event.registration_link_text – registration button label
- *   $event.image                  – image URL (empty string if no image)
- *   $event.image_tag              – ready-to-use <img> tag (empty string if no image)
- *   $event.date_start             – formatted start date
- *   $event.time_start             – formatted start time
- *   $event.date_end               – formatted end date (blank when same day as start)
- *   $event.time_end               – formatted end time
- *   $event.index                  – 0-based position in the event list
- *   $event.class                  – "even" or "odd"
- *
- *   Calendar
- *   $event.ical_url               – iCal / .ics download URL
- *   $event.gcal_url               – Google Calendar "add event" URL
- *   $event.calendar_links         – pre-built iCal + Google Calendar buttons
- *
- *   Social sharing
- *   $event.share_twitter          – X / Twitter share link
- *   $event.share_facebook         – Facebook share link
- *   $event.share_linkedin         – LinkedIn share link
- *   $event.share_email            – Email share link
- *   $event.social_links           – pre-built row with all four share links
- *
- *   Location & map  (only populated when $location is provided)
- *   $event.location_address       – street address
- *   $event.location_city          – city
- *   $event.location_state         – state / province abbreviation
- *   $event.location_country       – country name
- *   $event.location_postal        – postal / zip code
- *   $event.location_full          – full address on one line
- *   $event.map_url                – Google Maps search URL
- *   $event.map_link               – pre-built link to Google Maps
- *
- *   Layout helpers (pre-rendered HTML; empty when not applicable)
- *   $event.register_buttons       – Register + Read More buttons
- *
- * @param string $template    Smarty template string.
- * @param array  $event       CiviCRM event data array.
- * @param int    $index       0-based position in the event list.
- * @param string $image_field CiviCRM custom field key, e.g. "custom_7".
- * @param string $date_format PHP date() format string for dates.
- * @param string $time_format PHP date() format string for times.
- * @param array  $location    Location data from cib_fetch_event_location(); pass [] to skip.
- * @return string Rendered HTML for this event.
+ * @param array $atts Shortcode attributes.
+ * @return list<string> Sanitized URL list (may be empty).
  */
-function cib_apply_event_template(
-    $template,
+function cib_civievent_parse_default_image_pool(array $atts)
+{
+    $urls = [];
+    if (!empty($atts["default_images"])) {
+        $parts = preg_split(
+            '/[\r\n|]+/',
+            (string) $atts["default_images"],
+            -1,
+            PREG_SPLIT_NO_EMPTY,
+        );
+        foreach ($parts as $p) {
+            $u = esc_url_raw(trim($p));
+            if ($u !== "") {
+                $urls[] = $u;
+            }
+        }
+    }
+    if ($urls === [] && !empty($atts["default_image"])) {
+        $u = esc_url_raw(trim((string) $atts["default_image"]));
+        if ($u !== "") {
+            $urls[] = $u;
+        }
+    }
+    $urls = array_values(array_unique($urls));
+
+    /**
+     * Filter the list of fallback image URLs when the event has no Civi image.
+     *
+     * @param list<string> $urls Sanitized URLs.
+     * @param array        $atts Shortcode attributes.
+     */
+    return apply_filters("cib_civievent_default_image_pool", $urls, $atts);
+}
+
+/**
+ * Build the `$event` context array for Smarty (core fields, calendar links, social, location, map,
+ * register buttons). Use with `cib_civievent_smarty_fetch()` and assign under the `event` key
+ * when rendering a per-event fragment.
+ *
+ * @param array       $event       CiviCRM event data array.
+ * @param int         $index       0-based position in the event list.
+ * @param string      $image_field CiviCRM custom field key, e.g. "custom_7".
+ * @param string      $date_format PHP date() format string for dates.
+ * @param string      $time_format PHP date() format string for times.
+ * @param array       $location    Location data from cib_fetch_event_location(); pass [] to skip.
+ * @param string      $event_page  Prefix for event info URLs.
+ * @param list<string> $default_image_pool Fallback image URLs when Civi has none (stable pick per event).
+ * @return array<string,mixed>
+ */
+function cib_build_event_context(
     $event,
     $index = 0,
     $image_field = "",
@@ -178,6 +192,7 @@ function cib_apply_event_template(
     $time_format = "",
     $location = [],
     $event_page = "/civicrm/event/info?reset=1&id=",
+    $default_image_pool = [],
 ) {
     $event_id = intval($event["id"]);
     $url = $event_page . $event_id;
@@ -208,17 +223,36 @@ function cib_apply_event_template(
         }
     }
 
+    $show_location = !empty($event["is_show_location"]);
+
     // ── Image ────────────────────────────────────────────────────────────────────
-    $image_url =
-        $image_field && !empty($event[$image_field])
+    $civi_image =
+        $image_field !== "" && !empty($event[$image_field])
             ? $event[$image_field]
             : "";
+    $image_url = $civi_image !== "" ? $civi_image : "";
+    $image_is_default = false;
+    if ($image_url === "" && $default_image_pool !== []) {
+        $n = count($default_image_pool);
+        $pick =
+            $n === 1
+                ? 0
+                : (int) (abs(
+                    crc32((string) $event_id . "|" . (string) $index),
+                ) % $n);
+        $image_url = $default_image_pool[$pick];
+        $image_is_default = true;
+    }
     $image_tag = $image_url
         ? '<img src="' .
             esc_url($image_url) .
             '" alt="' .
             esc_attr($event["title"] ?? "") .
-            '" style="width:100%;height:100%;object-fit:cover;display:block;" />'
+            '" style="width:100%;height:100%;object-fit:cover;display:block;"' .
+            ($image_is_default
+                ? ' class="civievent-widget-image-default"'
+                : "") .
+            " />"
         : "";
 
     // ── Calendar ─────────────────────────────────────────────────────────────────
@@ -234,7 +268,7 @@ function cib_apply_event_template(
             "dates" => $gcal_start . "/" . $gcal_end,
             "details" => wp_strip_all_tags($event["summary"] ?? ""),
         ];
-        if ($event["is_show_location"] && !empty($location["full"])) {
+        if ($show_location && !empty($location["full"])) {
             $gcal_params["location"] = $location["full"];
         }
         $gcal_url =
@@ -317,8 +351,7 @@ function cib_apply_event_template(
             "</span></a>";
     }
 
-    // ── Render via CiviCRM's Smarty instance ─────────────────────────────────────
-    $event_data = [
+    return [
         "id" => $event_id,
         "title" => esc_html($event["title"] ?? ""),
         "summary" => wp_kses_post($event["summary"] ?? ""),
@@ -332,6 +365,7 @@ function cib_apply_event_template(
         ),
         "image" => esc_url($image_url),
         "image_tag" => $image_tag,
+        "image_is_default" => $image_is_default,
         "date_start" => esc_html($date_start),
         "time_start" => esc_html($time_start),
         "date_end" => esc_html($date_end),
@@ -346,38 +380,26 @@ function cib_apply_event_template(
         "share_linkedin" => $share_linkedin,
         "share_email" => $share_email,
         "social_links" => $social_links,
-        "location_address" =>
-            $event["is_show_location"] ?? false
-                ? esc_html($location["address"] ?? "")
-                : "",
-        "location_city" =>
-            $event["is_show_location"] ?? false
-                ? esc_html($location["city"] ?? "")
-                : "",
-        "location_state" =>
-            $event["is_show_location"] ?? false
-                ? esc_html($location["state"] ?? "")
-                : "",
-        "location_country" =>
-            $event["is_show_location"] ?? false
-                ? esc_html($location["country"] ?? "")
-                : "",
-        "location_postal" =>
-            $event["is_show_location"] ?? false
-                ? esc_html($location["postal"] ?? "")
-                : "",
-        "location_full" =>
-            $event["is_show_location"] ?? false
-                ? esc_html($location["full"] ?? "")
-                : "",
+        "location_address" => $show_location
+            ? esc_html($location["address"] ?? "")
+            : "",
+        "location_city" => $show_location
+            ? esc_html($location["city"] ?? "")
+            : "",
+        "location_state" => $show_location
+            ? esc_html($location["state"] ?? "")
+            : "",
+        "location_country" => $show_location
+            ? esc_html($location["country"] ?? "")
+            : "",
+        "location_postal" => $show_location
+            ? esc_html($location["postal"] ?? "")
+            : "",
+        "location_full" => $show_location
+            ? esc_html($location["full"] ?? "")
+            : "",
         "map_url" => esc_url($map_url),
         "map_link" => $map_link,
         "register_buttons" => $register_buttons,
     ];
-
-    $smarty = CRM_Core_Smarty::singleton();
-    $smarty->assign("event", $event_data);
-    $html = $smarty->fetch("string:" . $template);
-    $smarty->clearAssign("event");
-    return $html;
 }

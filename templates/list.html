@@ -1,34 +1,48 @@
-<div class="elementor-widget-container" style="background-color:transparent; border-radius:12px; box-shadow:0 2px 16px rgba(0,0,0,.08); overflow:hidden; margin-bottom:24px; display:flex; flex-wrap:wrap;">
+{* List widget: `$events` is the full enriched list (same shape as calendar-month popups). *}
+<div class="civievent-widget civievent-widget-{$wtheme|escape:'html'}">
+  {if $title}
+    <h2 class="title civievent-widget-title">{$title|escape:'html'}</h2>
+  {/if}
+  <div class="civievent-widget-list">
+    {if $events|@count eq 0}
+      <p class="civievent-widget-empty">{$empty_message|escape:'html'}</p>
+    {else}
+      {foreach from=$events item=event}
+        <div class="elementor-widget-container" style="background-color:transparent; border-radius:12px; box-shadow:0 2px 16px rgba(0,0,0,.08); overflow:hidden; margin-bottom:24px; display:flex; flex-wrap:wrap;">
 
-  <div class="elementor-image" style="flex:0 0 200px; min-height:150px; overflow:hidden;">
-    <a href="{$event.url}" style="display:block; height:100%;">{$event.image_tag}</a>
-  </div>
+          <div class="elementor-image" style="flex:0 0 200px; min-height:150px; overflow:hidden;">
+            <a href="{$event.url}" style="display:block; height:100%;">{$event.image_tag nofilter}</a>
+          </div>
 
-  <div class="elementor-text-editor" style="flex:1; min-width:220px; padding:20px 24px; display:flex; flex-direction:column; gap:12px;">
-    <div>
-      <p class="elementor-icon-box-title" style="margin:0 0 4px; font-size:.8em; font-weight:700; text-transform:uppercase; letter-spacing:.05em;">
-        {$event.date_start} &bull; {$event.time_start}
-        {if $event.time_end} - {$event.time_end} {/if}
-      </p>
+          <div class="elementor-text-editor" style="flex:1; min-width:220px; padding:20px 24px; display:flex; flex-direction:column; gap:12px;">
+            <div>
+              <p class="elementor-icon-box-title" style="margin:0 0 4px; font-size:.8em; font-weight:700; text-transform:uppercase; letter-spacing:.05em;">
+                {$event.date_start} &bull; {$event.time_start}
+                {if $event.time_end} - {$event.time_end} {/if}
+              </p>
 
-      <h3 class="elementor-heading-title" style="margin:0 0 6px; font-size:1.25em;">
-        <a href="{$event.url}" style="color:inherit; text-decoration:none;">{$event.title}</a>
-      </h3>
+              <h3 class="elementor-heading-title" style="margin:0 0 6px; font-size:1.25em;">
+                <a href="{$event.url}" style="color:inherit; text-decoration:none;">{$event.title}</a>
+              </h3>
 
-      {if $event.location_full}
-        <p style="margin:0 0 4px; font-size:.9em; opacity:0.8;">{$event.location_full}</p>
-      {/if}
+              {if $event.location_full}
+                <p style="margin:0 0 4px; font-size:.9em; opacity:0.8;">{$event.location_full}</p>
+              {/if}
 
-      {if $event.summary}
-        <div style="font-size:.9em; line-height:1.5;">{$event.summary|nl2br}</div>
-      {/if}
-    </div>
+              {if $event.summary}
+                <div style="font-size:.9em; line-height:1.5;">{$event.summary|nl2br}</div>
+              {/if}
+            </div>
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-      {if $event.register_url}
-        <a href="{$event.register_url}" class="button btn"><span>{$event.registration_link_text}</span></a>
-      {/if}
-      <a href="{$event.url}" class="button btn"><span>More info</span></a>
-    </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              {if $event.register_url}
+                <a href="{$event.register_url}" class="button btn"><span>{$event.registration_link_text}</span></a>
+              {/if}
+              <a href="{$event.url}" class="button btn"><span>More info</span></a>
+            </div>
+          </div>
+        </div>
+      {/foreach}
+    {/if}
   </div>
 </div>

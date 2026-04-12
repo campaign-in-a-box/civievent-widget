@@ -3,7 +3,7 @@
 /*
 Plugin Name: CIB CiviEvent Widget
 Description: CIB CiviEvent Widget plugin displays public CiviCRM events in a widget.
-Version: 5.0
+Version: 5.2
 Author: Campaign in a Box
 Author URI: https://www.cibapp.net/
 */
@@ -50,7 +50,7 @@ function civievent_single_widget_shortcode($atts, $content = null)
  * Available attributes include:
  *  - title string The widget title (default: "Upcoming Events"),
  *  - summary bool 1 = display the summary,
- *  - limit int The number of events (default: 5),
+ *  - limit int The number of events (default: 100),
  *  - alllink bool 1 = display "view all",
  *  - wtheme string The widget theme (default: "stripe"),
  *  - divider string The location field delimiter (default comma),
@@ -67,21 +67,26 @@ function civievent_single_widget_shortcode($atts, $content = null)
  *  - custom_filter string JSON of custom filter options (see documentation).
  *  - event_type_id int filter the event listing to a single event type
  *  - empty_message string text shown when there are no events (default: "No upcoming events.")
+ *  - default_image string optional absolute URL used when the event has no Civi image field value.
+ *  - default_images string optional several absolute URLs separated by | or newlines; one is chosen
+ *    per event (stable hash by event id) when there is no Civi image. Ignores default_image when non-empty.
+ *  - style string use "calendar-month" for a navigable monthly calendar with event popups
+ *    (Smarty via CiviCRM).
+ *  - upcoming_only bool when true (default), only events starting on or after today; set false
+ *    (e.g. upcoming_only="0") to include past events — use with calendar-month to browse prior months.
  *
- * All booleans default to false; any value makes them true.
+ * Most shortcode booleans default to false unless noted above.
  *
  * @return string The widget to drop into the post body.
  */
 
 add_shortcode("civievent_widget", "civievent_widget_shortcode");
 /**
- * Render an event list using a user-supplied {event.*} template.
+ * [civievent_widget] shortcode: list (default) or `style="calendar-month"`.
  *
- * Called when the [civievent_widget]...[/civievent_widget] shortcode has inner content.
- *
- * @param array  $atts     Shortcode attributes (limit, event_type_id, …).
- * @param string $template Per-event template string containing {event.*} tokens.
- * @return string Rendered HTML.
+ * @param array  $atts    Shortcode attributes.
+ * @param string $content Optional Smarty override for the full widget template (list or calendar-month).
+ * @return string HTML.
  */
 function civievent_widget_shortcode($atts, $content = null)
 {
@@ -90,14 +95,25 @@ function civievent_widget_shortcode($atts, $content = null)
     }
     civicrm_initialize();
 
-    $template = !empty($content)
-        ? $content
-        : file_get_contents(__DIR__ . "/templates/list.html");
     $atts = is_array($atts) ? $atts : [];
-    $limit = isset($atts["limit"]) ? intval($atts["limit"]) : 5;
-    $event_type_id = isset($atts["event_type_id"])
-        ? intval($atts["event_type_id"])
-        : 0;
+
+    $style = isset($atts["style"]) ? sanitize_text_field($atts["style"]) : "";
+
+    $default_tpl =
+        __DIR__ .
+        "/templates/" .
+        ($style === "calendar-month" ? "calendar-month.html" : "list.html");
+    $template_source = !empty($content)
+        ? $content
+        : (is_readable($default_tpl)
+            ? file_get_contents($default_tpl)
+            : "");
+
+    $limit = isset($atts["limit"]) ? max(1, intval($atts["limit"])) : 100;
+    $upcoming_only = !isset($atts["upcoming_only"])
+        ? true
+        : filter_var($atts["upcoming_only"], FILTER_VALIDATE_BOOLEAN);
+
     $empty_message =
         isset($atts["empty_message"]) && $atts["empty_message"] !== ""
             ? sanitize_text_field($atts["empty_message"])
@@ -105,9 +121,11 @@ function civievent_widget_shortcode($atts, $content = null)
     $image_field_label = !empty($atts["image_field"])
         ? sanitize_text_field($atts["image_field"])
         : "cibapp_Image_Link";
-
-    // Resolve the custom image field to its APIv4 GroupName.field_name key.
+    $event_type_id = isset($atts["event_type_id"])
+        ? intval($atts["event_type_id"])
+        : 0;
     $image_field = cib_resolve_image_field($image_field_label);
+    $default_image_pool = cib_civievent_parse_default_image_pool($atts);
 
     $select_fields = [
         "id",
@@ -126,7 +144,7 @@ function civievent_widget_shortcode($atts, $content = null)
         "is_share",
         "loc_block_id",
     ];
-    if ($image_field) {
+    if ($image_field !== "") {
         $select_fields[] = $image_field;
     }
 
@@ -135,14 +153,15 @@ function civievent_widget_shortcode($atts, $content = null)
             ->addSelect(...$select_fields)
             ->addWhere("is_public", "=", true)
             ->addWhere("is_active", "=", true)
-            ->addWhere("is_template", "=", false)
-            ->addWhere("start_date", ">=", date("Y-m-d"))
-            ->addOrderBy("start_date", "ASC")
-            ->setLimit($limit);
+            ->addWhere("is_template", "=", false);
+        if ($upcoming_only) {
+            $query->addWhere("start_date", ">=", date("Y-m-d"));
+        }
+        $query->addOrderBy("start_date", "ASC")->setLimit($limit);
         if ($event_type_id) {
             $query->addWhere("event_type_id", "=", $event_type_id);
         }
-        $events = $query->execute()->getArrayCopy();
+        $civi_events = $query->execute()->getArrayCopy();
     } catch (\CRM_Core_Exception $e) {
         CRM_Core_Error::debug_log_message(
             "cib-civievent-widget: " . $e->getMessage(),
@@ -158,44 +177,63 @@ function civievent_widget_shortcode($atts, $content = null)
     $wtheme = sanitize_html_class(
         !empty($atts["wtheme"]) ? $atts["wtheme"] : "stripe",
     );
-    $title = !empty($atts["title"]) ? esc_html($atts["title"]) : "";
 
-    $html = '<div class="civievent-widget civievent-widget-' . $wtheme . '">';
-    if ($title) {
-        $html .= '<h2 class="title civievent-widget-title">' . $title . "</h2>";
-    }
-    $html .= '<div class="civievent-widget-list">';
+    $title = !empty($atts["title"]) ? $atts["title"] : "";
 
-    if (empty($events)) {
-        $html .=
-            '<p class="civievent-widget-empty">' .
-            esc_html($empty_message) .
-            "</p>";
-    } else {
-        $needs_location = cib_template_needs_location($template);
-        $event_page = !empty($atts["url"])
-            ? $atts["url"]
-            : "/civicrm/event/info?reset=1&id=";
-        $index = 0;
-        foreach ($events as $event) {
-            $location = $needs_location
-                ? cib_fetch_event_location($event["id"])
-                : [];
-            $html .= cib_apply_event_template(
-                $template,
-                $event,
-                $index,
-                $image_field,
-                $date_format,
-                $time_format,
-                $location,
-                $event_page,
-            );
-            $index++;
-        }
+    $needs_location =
+        $template_source !== "" &&
+        cib_template_needs_location($template_source);
+    $event_page = !empty($atts["url"])
+        ? $atts["url"]
+        : "/civicrm/event/info?reset=1&id=";
+
+    $uid = wp_unique_id("civievent-cal-");
+
+    // Enriched rows for Smarty; calendar-month uses `$payload_json` for the grid script.
+    $events = [];
+    $index = 0;
+    foreach ($civi_events as $event) {
+        $location = $needs_location
+            ? cib_fetch_event_location($event["id"])
+            : [];
+        $events[] = cib_build_event_context(
+            $event,
+            $index,
+            $image_field,
+            $date_format,
+            $time_format,
+            $location,
+            $event_page,
+            $default_image_pool,
+        );
+        $index++;
     }
 
-    $html .= "</div></div>";
+    $start_of_week = intval(get_option("start_of_week", "0"));
+    $payload_json = wp_json_encode(
+        [
+            "uid" => (string) $uid,
+            "events" => array_map(static function (array $e) {
+                return [
+                    "id" => (int) ($e["id"] ?? 0),
+                    "start" => (string) ($e["start_date"] ?? ""),
+                    "title" => (string) ($e["title"] ?? ""),
+                ];
+            }, $civi_events),
+            "startOfWeek" => $start_of_week,
+        ],
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT,
+    );
 
-    return $html;
+    $widget_context = [
+        "uid" => $uid,
+        "wtheme" => $wtheme,
+        "title" => $title,
+        "empty_message" => $empty_message,
+        "events" => $events,
+        "payload_json" => $payload_json,
+    ];
+
+    $smarty = CRM_Core_Smarty::singleton();
+    return $smarty->fetchWith("string:" . $template_source, $widget_context);
 }

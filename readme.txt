@@ -39,8 +39,9 @@ Both shortcodes support a **template mode**: place your own HTML between the ope
 | `{$event.description}` | Full event description (HTML allowed) |
 | `{$event.register_url}` | URL of the online registration page |
 | `{$event.registration_link_text}` | Registration button label from CiviCRM |
-| `{$event.image}` | Image URL (empty if no image set) |
-| `{$event.image_tag}` | Ready-to-use `<img>` tag (empty if no image) |
+| `{$event.image}` | Image URL (empty only if no Civi image and no default_image(s) shortcode URLs) |
+| `{$event.image_tag}` | Ready-to-use `<img>` tag (empty only if no Civi image and no defaults) |
+| `{$event.image_is_default}` | `true` when the URL comes from `default_image` / `default_images`, not Civi |
 | `{$event.date_start}` | Formatted start date |
 | `{$event.time_start}` | Formatted start time |
 | `{$event.date_end}` | Formatted end date (blank when same day as start) |
@@ -109,9 +110,13 @@ Both widgets are also available without a template.  Use the `[civievent_widget]
 - "summary=1"
   Display the event summary.  Omit the parameter or set it to 0 to hide the summary.
   (List widget only.)
-- "limit=5"
-  Display the specified number of events (default: 5).
+- "limit=100"
+  Display the specified number of events (default: **100**).
   (List widget only.)*
+- "upcoming_only=1" (or omit)
+  For **`[civievent_widget]`** with the Smarty/template implementation: when true (the default), only public events with a **start date on or after today** are loaded from CiviCRM. Set to **`0`**, **`false`**, **`no`**, or **`off`** to include **past** events as well. Use **`upcoming_only="0"`** together with **`style="calendar-month"`** so the month view can navigate to earlier months; the default upcoming-only filter would hide most past dates.
+- "style=calendar-month"
+  For **`[civievent_widget]`**: show a navigable month calendar with event popups instead of a vertical list. Uses the same **`limit`** as the list (default **100**). Combine with **`upcoming_only="0"`** if you need events before today on the calendar.
 - "alllink=1"
   Display "view all" with a link to the page with a full list of public events.  Omit the parameter or set it to 0 to hide the link.
   (List widget only.)*
