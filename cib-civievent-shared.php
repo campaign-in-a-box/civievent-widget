@@ -333,15 +333,18 @@ function cib_build_event_context(
         }
     }
 
-    // ── Register buttons (replicates regFix()) ────────────────────────────────────
-    $register_buttons = "";
-    if (
-        !empty($event["is_online_registration"]) &&
+    // ── Register link/buttons (same window as Civi regFix: online reg + date range) ─
+    $now = time();
+    $registration_window_ok =
         (empty($event["registration_start_date"]) ||
-            strtotime($event["registration_start_date"]) <= time()) &&
+            strtotime((string) $event["registration_start_date"]) <= $now) &&
         (empty($event["registration_end_date"]) ||
-            strtotime($event["registration_end_date"]) > time())
-    ) {
+            strtotime((string) $event["registration_end_date"]) > $now);
+    $registration_open =
+        !empty($event["is_online_registration"]) && $registration_window_ok;
+
+    $register_buttons = "";
+    if ($registration_open) {
         $link_text = esc_html($event["registration_link_text"] ?? "Register");
         $register_buttons .=
             " <a href='" .
@@ -357,9 +360,7 @@ function cib_build_event_context(
         "summary" => wp_kses_post($event["summary"] ?? ""),
         "description" => wp_kses_post($event["description"] ?? ""),
         "url" => esc_url($url),
-        "register_url" => !empty($event["is_online_registration"])
-            ? esc_url($reg_url)
-            : "",
+        "register_url" => $registration_open ? esc_url($reg_url) : "",
         "registration_link_text" => esc_html(
             $event["registration_link_text"] ?? "Register",
         ),
