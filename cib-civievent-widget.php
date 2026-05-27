@@ -3,7 +3,7 @@
 /*
 Plugin Name: CIB CiviEvent Widget
 Description: CIB CiviEvent Widget plugin displays public CiviCRM events in a widget.
-Version: 5.2
+Version: 5.2.1
 Author: Campaign in a Box
 Author URI: https://www.cibapp.net/
 */
@@ -74,6 +74,10 @@ function civievent_single_widget_shortcode($atts, $content = null)
  *    (Smarty via CiviCRM).
  *  - upcoming_only bool when true (default), only events starting on or after today; set false
  *    (e.g. upcoming_only="0") to include past events — use with calendar-month to browse prior months.
+ *  - months_back int when upcoming_only is false, how many months before today to load (default 36
+ *    for calendar-month, 12 for list).
+ *  - months_ahead int when upcoming_only is false, how many months after today to load (default 24
+ *    for calendar-month, 12 for list).
  *
  * Most shortcode booleans default to false unless noted above.
  *
@@ -110,9 +114,7 @@ function civievent_widget_shortcode($atts, $content = null)
             : "");
 
     $limit = isset($atts["limit"]) ? max(1, intval($atts["limit"])) : 100;
-    $upcoming_only = !isset($atts["upcoming_only"])
-        ? true
-        : filter_var($atts["upcoming_only"], FILTER_VALIDATE_BOOLEAN);
+    $upcoming_only = cib_civievent_parse_bool($atts, "upcoming_only", true);
 
     $empty_message =
         isset($atts["empty_message"]) && $atts["empty_message"] !== ""
@@ -155,7 +157,18 @@ function civievent_widget_shortcode($atts, $content = null)
             ->addWhere("is_active", "=", true)
             ->addWhere("is_template", "=", false);
         if ($upcoming_only) {
-            $query->addWhere("start_date", ">=", date("Y-m-d"));
+            $query->addWhere("start_date", ">=", cib_civievent_today_ymd());
+        } else {
+            [$from_ymd, $to_ymd] = cib_civievent_past_events_date_window(
+                $style,
+                $atts,
+            );
+            $query
+                ->addWhere("start_date", ">=", $from_ymd)
+                ->addWhere("start_date", "<=", $to_ymd . " 23:59:59");
+            if ($style === "calendar-month" && $limit < 500) {
+                $limit = 500;
+            }
         }
         $query->addOrderBy("start_date", "ASC")->setLimit($limit);
         if ($event_type_id) {

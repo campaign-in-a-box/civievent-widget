@@ -7,6 +7,73 @@
  */
 
 /**
+ * Parse a shortcode boolean attribute (WordPress passes all values as strings).
+ *
+ * Uses array_key_exists so explicit "0" / "false" are not treated as missing.
+ *
+ * @param array  $atts    Shortcode attributes.
+ * @param string $key     Attribute name (lowercase).
+ * @param bool   $default Default when the key is absent.
+ * @return bool
+ */
+function cib_civievent_parse_bool(array $atts, $key, $default = false)
+{
+    if (!array_key_exists($key, $atts)) {
+        return $default;
+    }
+    return filter_var($atts[$key], FILTER_VALIDATE_BOOLEAN);
+}
+
+/**
+ * Today's date in the WordPress site timezone (Y-m-d).
+ *
+ * @return string
+ */
+function cib_civievent_today_ymd()
+{
+    return function_exists("wp_date")
+        ? wp_date("Y-m-d")
+        : current_time("Y-m-d");
+}
+
+/**
+ * Inclusive start/end dates (Y-m-d) for loading past + future events.
+ *
+ * Used when upcoming_only is false so the query does not return only the
+ * oldest rows in the database (ASC + limit without a window).
+ *
+ * @param string $style       Shortcode style (e.g. calendar-month).
+ * @param array  $atts        Shortcode attributes; optional months_back, months_ahead.
+ * @return array{0:string,1:string} [from_ymd, to_ymd]
+ */
+function cib_civievent_past_events_date_window($style, array $atts)
+{
+    $default_back = $style === "calendar-month" ? 36 : 12;
+    $default_ahead = $style === "calendar-month" ? 24 : 12;
+    $months_back = isset($atts["months_back"])
+        ? max(0, intval($atts["months_back"]))
+        : $default_back;
+    $months_ahead = isset($atts["months_ahead"])
+        ? max(0, intval($atts["months_ahead"]))
+        : $default_ahead;
+
+    $today = cib_civievent_today_ymd();
+    $tz = function_exists("wp_timezone")
+        ? wp_timezone()
+        : new DateTimeZone(date_default_timezone_get());
+    $from = new DateTimeImmutable($today, $tz);
+    $to = new DateTimeImmutable($today, $tz);
+    if ($months_back > 0) {
+        $from = $from->modify("-{$months_back} months");
+    }
+    if ($months_ahead > 0) {
+        $to = $to->modify("+{$months_ahead} months");
+    }
+
+    return [$from->format("Y-m-d"), $to->format("Y-m-d")];
+}
+
+/**
  * Fetch address data for an event's location block.
  *
  * Only queries CiviCRM when the event has "Show location" enabled.

@@ -1,5 +1,9 @@
 === CiviEvent Widget Changes ===
 
+= 5.2.1 =
+* **Fix:** `upcoming_only="0"` on sites with many historical events no longer returns only the oldest events (ASC + limit). Past events are loaded within a date window around today (`months_back` / `months_ahead`; wider defaults for `style="calendar-month"`). Calendar mode raises the fetch limit to 500 when including past events.
+* **Fix:** "Today" for the upcoming-only filter uses the WordPress site timezone instead of the PHP default timezone.
+
 = 5.2 =
 * **`[civievent_widget]` `limit`:** default is **100** for both list and **`style="calendar-month"`** (previously the list default was 5).
 * Shortcode attributes **`default_image`** (single URL) and **`default_images`** (pipe- or newline-separated URLs) supply placeholder images when the event has no Civi image; multi-URL lists are distributed per event via a stable hash. Filter: `cib_civievent_default_image_pool`. Template variable `{$event.image_is_default}`; placeholder images use `<img class="civievent-widget-image-default">`.
