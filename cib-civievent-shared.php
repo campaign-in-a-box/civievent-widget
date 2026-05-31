@@ -90,7 +90,7 @@ function cib_civievent_fetch_widget_events(
     }
 
     $past_limit = (int) ceil($limit / 2);
-    $future_limit = $limit - $past_limit;
+    $future_limit = max(1, $limit - $past_limit);
 
     $past_events = cib_civievent_base_event_query(
         $select_fields,
@@ -113,7 +113,7 @@ function cib_civievent_fetch_widget_events(
         ->getArrayCopy();
 
     $events = array_merge($past_events, $future_events);
-    usort($events, static function (array $a, array $b): int {
+    usort($events, static function (array $a, array $b) {
         return strcmp(
             (string) ($a["start_date"] ?? ""),
             (string) ($b["start_date"] ?? ""),
