@@ -37,40 +37,90 @@ function cib_civievent_today_ymd()
 }
 
 /**
- * Inclusive start/end dates (Y-m-d) for loading past + future events.
+ * Build a base APIv4 Event query for public widget listings.
  *
- * Used when upcoming_only is false so the query does not return only the
- * oldest rows in the database (ASC + limit without a window).
- *
- * @param string $style       Shortcode style (e.g. calendar-month).
- * @param array  $atts        Shortcode attributes; optional months_back, months_ahead.
- * @return array{0:string,1:string} [from_ymd, to_ymd]
+ * @param list<string> $select_fields Fields to select.
+ * @param int          $event_type_id Optional event type filter (0 = all).
+ * @return \Civi\Api4\Generic\DAOGetAction
  */
-function cib_civievent_past_events_date_window($style, array $atts)
-{
-    $default_back = $style === "calendar-month" ? 36 : 12;
-    $default_ahead = $style === "calendar-month" ? 24 : 12;
-    $months_back = isset($atts["months_back"])
-        ? max(0, intval($atts["months_back"]))
-        : $default_back;
-    $months_ahead = isset($atts["months_ahead"])
-        ? max(0, intval($atts["months_ahead"]))
-        : $default_ahead;
+function cib_civievent_base_event_query(
+    array $select_fields,
+    $event_type_id = 0,
+) {
+    $query = \Civi\Api4\Event::get(false)
+        ->addSelect(...$select_fields)
+        ->addWhere("is_public", "=", true)
+        ->addWhere("is_active", "=", true)
+        ->addWhere("is_template", "=", false);
+    if ($event_type_id) {
+        $query->addWhere("event_type_id", "=", $event_type_id);
+    }
+    return $query;
+}
 
+/**
+ * Fetch public events for the list/calendar widget.
+ *
+ * Upcoming-only mode returns the next $limit events from today onward.
+ * When past events are included, the most recent past and nearest future events
+ * are merged so the limit is not consumed by the oldest rows in the database.
+ *
+ * @param list<string> $select_fields Fields to select.
+ * @param int          $limit         Maximum number of events.
+ * @param bool         $upcoming_only When true, only events starting today or later.
+ * @param int          $event_type_id Optional event type filter (0 = all).
+ * @return list<array<string,mixed>>
+ */
+function cib_civievent_fetch_widget_events(
+    array $select_fields,
+    $limit,
+    $upcoming_only,
+    $event_type_id = 0,
+) {
+    $limit = max(1, (int) $limit);
     $today = cib_civievent_today_ymd();
-    $tz = function_exists("wp_timezone")
-        ? wp_timezone()
-        : new DateTimeZone(date_default_timezone_get());
-    $from = new DateTimeImmutable($today, $tz);
-    $to = new DateTimeImmutable($today, $tz);
-    if ($months_back > 0) {
-        $from = $from->modify("-{$months_back} months");
-    }
-    if ($months_ahead > 0) {
-        $to = $to->modify("+{$months_ahead} months");
+
+    if ($upcoming_only) {
+        return cib_civievent_base_event_query($select_fields, $event_type_id)
+            ->addWhere("start_date", ">=", $today)
+            ->addOrderBy("start_date", "ASC")
+            ->setLimit($limit)
+            ->execute()
+            ->getArrayCopy();
     }
 
-    return [$from->format("Y-m-d"), $to->format("Y-m-d")];
+    $past_limit = (int) ceil($limit / 2);
+    $future_limit = $limit - $past_limit;
+
+    $past_events = cib_civievent_base_event_query(
+        $select_fields,
+        $event_type_id,
+    )
+        ->addWhere("start_date", "<", $today)
+        ->addOrderBy("start_date", "DESC")
+        ->setLimit($past_limit)
+        ->execute()
+        ->getArrayCopy();
+
+    $future_events = cib_civievent_base_event_query(
+        $select_fields,
+        $event_type_id,
+    )
+        ->addWhere("start_date", ">=", $today)
+        ->addOrderBy("start_date", "ASC")
+        ->setLimit($future_limit)
+        ->execute()
+        ->getArrayCopy();
+
+    $events = array_merge($past_events, $future_events);
+    usort($events, static function (array $a, array $b): int {
+        return strcmp(
+            (string) ($a["start_date"] ?? ""),
+            (string) ($b["start_date"] ?? ""),
+        );
+    });
+
+    return $events;
 }
 
 /**

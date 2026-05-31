@@ -1,7 +1,12 @@
 === CiviEvent Widget Changes ===
 
+= 5.2.2 =
+* **Fix:** `upcoming_only="0"` loads the most recent past and nearest future events (split queries + `limit`) instead of the oldest rows in the database. No separate date-window shortcode attributes — control volume with **`limit`** only.
+* **Fix:** "Today" uses the WordPress site timezone (`wp_date` / `current_time`).
+* Calendar mode with past events still raises the fetch **`limit`** to at least **500** when it would otherwise be lower.
+
 = 5.2.1 =
-* **Fix:** `upcoming_only="0"` on sites with many historical events no longer returns only the oldest events (ASC + limit). Past events are loaded within a date window around today (`months_back` / `months_ahead`; wider defaults for `style="calendar-month"`). Calendar mode raises the fetch limit to 500 when including past events.
+* **Fix:** `upcoming_only="0"` on sites with many historical events no longer returns only the oldest events (superseded by 5.2.2 limit-based split queries).
 * **Fix:** "Today" for the upcoming-only filter uses the WordPress site timezone instead of the PHP default timezone.
 
 = 5.2 =
