@@ -3,7 +3,7 @@
 /*
 Plugin Name: CIB CiviEvent Widget
 Description: CIB CiviEvent Widget plugin displays public CiviCRM events in a widget.
-Version: 5.2
+Version: 5.2.2
 Author: Campaign in a Box
 Author URI: https://www.cibapp.net/
 */
@@ -74,6 +74,7 @@ function civievent_single_widget_shortcode($atts, $content = null)
  *    (Smarty via CiviCRM).
  *  - upcoming_only bool when true (default), only events starting on or after today; set false
  *    (e.g. upcoming_only="0") to include past events — use with calendar-month to browse prior months.
+ *    When false, up to half of limit are recent past events and the rest are upcoming (see limit).
  *
  * Most shortcode booleans default to false unless noted above.
  *
@@ -110,9 +111,7 @@ function civievent_widget_shortcode($atts, $content = null)
             : "");
 
     $limit = isset($atts["limit"]) ? max(1, intval($atts["limit"])) : 100;
-    $upcoming_only = !isset($atts["upcoming_only"])
-        ? true
-        : filter_var($atts["upcoming_only"], FILTER_VALIDATE_BOOLEAN);
+    $upcoming_only = cib_civievent_parse_bool($atts, "upcoming_only", true);
 
     $empty_message =
         isset($atts["empty_message"]) && $atts["empty_message"] !== ""
@@ -148,20 +147,17 @@ function civievent_widget_shortcode($atts, $content = null)
         $select_fields[] = $image_field;
     }
 
+    if (!$upcoming_only && $style === "calendar-month" && $limit < 500) {
+        $limit = 500;
+    }
+
     try {
-        $query = \Civi\Api4\Event::get(false)
-            ->addSelect(...$select_fields)
-            ->addWhere("is_public", "=", true)
-            ->addWhere("is_active", "=", true)
-            ->addWhere("is_template", "=", false);
-        if ($upcoming_only) {
-            $query->addWhere("start_date", ">=", date("Y-m-d"));
-        }
-        $query->addOrderBy("start_date", "ASC")->setLimit($limit);
-        if ($event_type_id) {
-            $query->addWhere("event_type_id", "=", $event_type_id);
-        }
-        $civi_events = $query->execute()->getArrayCopy();
+        $civi_events = cib_civievent_fetch_widget_events(
+            $select_fields,
+            $limit,
+            $upcoming_only,
+            $event_type_id,
+        );
     } catch (\CRM_Core_Exception $e) {
         CRM_Core_Error::debug_log_message(
             "cib-civievent-widget: " . $e->getMessage(),

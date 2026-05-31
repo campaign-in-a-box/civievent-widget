@@ -7,6 +7,123 @@
  */
 
 /**
+ * Parse a shortcode boolean attribute (WordPress passes all values as strings).
+ *
+ * Uses array_key_exists so explicit "0" / "false" are not treated as missing.
+ *
+ * @param array  $atts    Shortcode attributes.
+ * @param string $key     Attribute name (lowercase).
+ * @param bool   $default Default when the key is absent.
+ * @return bool
+ */
+function cib_civievent_parse_bool(array $atts, $key, $default = false)
+{
+    if (!array_key_exists($key, $atts)) {
+        return $default;
+    }
+    return filter_var($atts[$key], FILTER_VALIDATE_BOOLEAN);
+}
+
+/**
+ * Today's date in the WordPress site timezone (Y-m-d).
+ *
+ * @return string
+ */
+function cib_civievent_today_ymd()
+{
+    return function_exists("wp_date")
+        ? wp_date("Y-m-d")
+        : current_time("Y-m-d");
+}
+
+/**
+ * Build a base APIv4 Event query for public widget listings.
+ *
+ * @param list<string> $select_fields Fields to select.
+ * @param int          $event_type_id Optional event type filter (0 = all).
+ * @return \Civi\Api4\Generic\DAOGetAction
+ */
+function cib_civievent_base_event_query(
+    array $select_fields,
+    $event_type_id = 0,
+) {
+    $query = \Civi\Api4\Event::get(false)
+        ->addSelect(...$select_fields)
+        ->addWhere("is_public", "=", true)
+        ->addWhere("is_active", "=", true)
+        ->addWhere("is_template", "=", false);
+    if ($event_type_id) {
+        $query->addWhere("event_type_id", "=", $event_type_id);
+    }
+    return $query;
+}
+
+/**
+ * Fetch public events for the list/calendar widget.
+ *
+ * Upcoming-only mode returns the next $limit events from today onward.
+ * When past events are included, the most recent past and nearest future events
+ * are merged so the limit is not consumed by the oldest rows in the database.
+ *
+ * @param list<string> $select_fields Fields to select.
+ * @param int          $limit         Maximum number of events.
+ * @param bool         $upcoming_only When true, only events starting today or later.
+ * @param int          $event_type_id Optional event type filter (0 = all).
+ * @return list<array<string,mixed>>
+ */
+function cib_civievent_fetch_widget_events(
+    array $select_fields,
+    $limit,
+    $upcoming_only,
+    $event_type_id = 0,
+) {
+    $limit = max(1, (int) $limit);
+    $today = cib_civievent_today_ymd();
+
+    if ($upcoming_only) {
+        return cib_civievent_base_event_query($select_fields, $event_type_id)
+            ->addWhere("start_date", ">=", $today)
+            ->addOrderBy("start_date", "ASC")
+            ->setLimit($limit)
+            ->execute()
+            ->getArrayCopy();
+    }
+
+    $past_limit = (int) ceil($limit / 2);
+    $future_limit = max(1, $limit - $past_limit);
+
+    $past_events = cib_civievent_base_event_query(
+        $select_fields,
+        $event_type_id,
+    )
+        ->addWhere("start_date", "<", $today)
+        ->addOrderBy("start_date", "DESC")
+        ->setLimit($past_limit)
+        ->execute()
+        ->getArrayCopy();
+
+    $future_events = cib_civievent_base_event_query(
+        $select_fields,
+        $event_type_id,
+    )
+        ->addWhere("start_date", ">=", $today)
+        ->addOrderBy("start_date", "ASC")
+        ->setLimit($future_limit)
+        ->execute()
+        ->getArrayCopy();
+
+    $events = array_merge($past_events, $future_events);
+    usort($events, static function (array $a, array $b) {
+        return strcmp(
+            (string) ($a["start_date"] ?? ""),
+            (string) ($b["start_date"] ?? ""),
+        );
+    });
+
+    return $events;
+}
+
+/**
  * Fetch address data for an event's location block.
  *
  * Only queries CiviCRM when the event has "Show location" enabled.
