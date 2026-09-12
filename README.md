@@ -116,6 +116,13 @@ Both widgets are also available without a template. Use the `[civievent_widget]`
     (List widget only.)
 *   **`upcoming_only=1`** (or omit)
     For **`[civievent_widget]`** with the Smarty/template implementation: when true (the default), only public events with a **start date on or after today** (site timezone) are loaded from CiviCRM, up to **`limit`**. Set to **`0`**, **`false`**, **`no`**, or **`off`** to include **past** events as well. Use **`upcoming_only="0"`** together with **`style="calendar-month"`** so the month view can navigate to earlier months. With past events included, roughly half of **`limit`** are the most recent past events and half are upcoming; raise **`limit`** on busy sites (calendar mode bumps the fetch to at least **500** when including past events).
+*   **`past_only=1`**
+    For **`[civievent_widget]`**: load only public events with a **start date before today** (site timezone), **most recent first**, up to **`limit`**. Use a second shortcode with this for a standalone "Past events" section beneath an upcoming list — **`upcoming_only="0"`** merges past and upcoming into a single ascending list and cannot produce a separate section. Takes precedence over **`upcoming_only`** when both are set, and is ignored for **`style="calendar-month"`** (use **`upcoming_only="0"`** there to browse prior months). When no past events match, the default empty message is "No past events."
+
+    ```
+    [civievent_widget limit="10"]
+    [civievent_widget past_only="1" limit="6" title="Past events"]
+    ```
 *   **`style=calendar-month`**
     For **`[civievent_widget]`**: show a navigable month calendar with event popups instead of a vertical list. Uses the same **`limit`** as the list (default **100**). Combine with **`upcoming_only="0"`** if you need events before today on the calendar.
 *   **`alllink=1`**
