@@ -287,6 +287,42 @@ function cib_civievent_parse_default_image_pool(array $atts)
 }
 
 /**
+ * Whether online registration should be offered (mirrors CRM_Event_BAO_Event::validRegistrationDate).
+ *
+ * @param array<string,mixed> $event CiviCRM Event API row.
+ * @return bool
+ */
+function cib_civievent_registration_is_open(array $event)
+{
+    if (empty($event["is_online_registration"])) {
+        return false;
+    }
+
+    $now = time();
+    $start_date = !empty($event["registration_start_date"])
+        ? strtotime((string) $event["registration_start_date"])
+        : 0;
+    $end_date = !empty($event["registration_end_date"])
+        ? strtotime((string) $event["registration_end_date"])
+        : 0;
+    $event_end = !empty($event["end_date"])
+        ? strtotime((string) $event["end_date"])
+        : 0;
+
+    if ($start_date && $start_date >= $now) {
+        return false;
+    }
+    if ($end_date && $end_date < $now) {
+        return false;
+    }
+    if ($event_end && $event_end < $now && !$end_date) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * Build the `$event` context array for Smarty (core fields, calendar links, social, location, map,
  * register buttons). Use with `cib_civievent_smarty_fetch()` and assign under the `event` key
  * when rendering a per-event fragment.
@@ -450,15 +486,8 @@ function cib_build_event_context(
         }
     }
 
-    // ── Register link/buttons (same window as Civi regFix: online reg + date range) ─
-    $now = time();
-    $registration_window_ok =
-        (empty($event["registration_start_date"]) ||
-            strtotime((string) $event["registration_start_date"]) <= $now) &&
-        (empty($event["registration_end_date"]) ||
-            strtotime((string) $event["registration_end_date"]) > $now);
-    $registration_open =
-        !empty($event["is_online_registration"]) && $registration_window_ok;
+    // ── Register link/buttons (same rules as Civi Event Info + validRegistrationDate) ─
+    $registration_open = cib_civievent_registration_is_open($event);
 
     $register_buttons = "";
     if ($registration_open) {

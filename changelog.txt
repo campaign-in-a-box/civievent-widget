@@ -1,5 +1,8 @@
 === CiviEvent Widget Changes ===
 
+= 5.2.3 =
+* **Fix:** Hide register links when the event has ended and no registration end date is set (matches CiviCRM `validRegistrationDate` on Event Info).
+
 = 5.2.2 =
 * **Fix:** `upcoming_only="0"` loads the most recent past and nearest future events (split queries + `limit`) instead of the oldest rows in the database. No separate date-window shortcode attributes — control volume with **`limit`** only.
 * **Fix:** "Today" uses the WordPress site timezone (`wp_date` / `current_time`).

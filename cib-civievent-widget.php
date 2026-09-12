@@ -3,7 +3,7 @@
 /*
 Plugin Name: CIB CiviEvent Widget
 Description: CIB CiviEvent Widget plugin displays public CiviCRM events in a widget.
-Version: 5.2.2
+Version: 5.2.3
 Author: Campaign in a Box
 Author URI: https://www.cibapp.net/
 */
