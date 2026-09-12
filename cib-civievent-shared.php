@@ -65,10 +65,14 @@ function cib_civievent_base_event_query(
  * When past events are included, the most recent past and nearest future events
  * are merged so the limit is not consumed by the oldest rows in the database.
  *
+ * Past-only mode returns the $limit most recent finished events, newest first, so
+ * a page can carry a standalone "Past events" section alongside an upcoming list.
+ *
  * @param list<string> $select_fields Fields to select.
  * @param int          $limit         Maximum number of events.
  * @param bool         $upcoming_only When true, only events starting today or later.
  * @param int          $event_type_id Optional event type filter (0 = all).
+ * @param bool         $past_only     When true, only events that started before today.
  * @return list<array<string,mixed>>
  */
 function cib_civievent_fetch_widget_events(
@@ -76,9 +80,19 @@ function cib_civievent_fetch_widget_events(
     $limit,
     $upcoming_only,
     $event_type_id = 0,
+    $past_only = false,
 ) {
     $limit = max(1, (int) $limit);
     $today = cib_civievent_today_ymd();
+
+    if ($past_only) {
+        return cib_civievent_base_event_query($select_fields, $event_type_id)
+            ->addWhere("start_date", "<", $today)
+            ->addOrderBy("start_date", "DESC")
+            ->setLimit($limit)
+            ->execute()
+            ->getArrayCopy();
+    }
 
     if ($upcoming_only) {
         return cib_civievent_base_event_query($select_fields, $event_type_id)

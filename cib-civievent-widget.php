@@ -3,7 +3,7 @@
 /*
 Plugin Name: CIB CiviEvent Widget
 Description: CIB CiviEvent Widget plugin displays public CiviCRM events in a widget.
-Version: 5.2.2
+Version: 5.3.0
 Author: Campaign in a Box
 Author URI: https://www.cibapp.net/
 */
@@ -75,6 +75,10 @@ function civievent_single_widget_shortcode($atts, $content = null)
  *  - upcoming_only bool when true (default), only events starting on or after today; set false
  *    (e.g. upcoming_only="0") to include past events — use with calendar-month to browse prior months.
  *    When false, up to half of limit are recent past events and the rest are upcoming (see limit).
+ *  - past_only bool when true, only events that started before today, most recent first. Use a
+ *    second shortcode with past_only="1" for a standalone "Past events" section beneath an
+ *    upcoming list. Takes precedence over upcoming_only; ignored for style="calendar-month",
+ *    where upcoming_only="0" is the way to browse prior months.
  *
  * Most shortcode booleans default to false unless noted above.
  *
@@ -112,11 +116,18 @@ function civievent_widget_shortcode($atts, $content = null)
 
     $limit = isset($atts["limit"]) ? max(1, intval($atts["limit"])) : 100;
     $upcoming_only = cib_civievent_parse_bool($atts, "upcoming_only", true);
+    // Calendar mode paints a month grid, where "past only" has no meaning -- prior
+    // months are reached with upcoming_only="0" instead.
+    $past_only =
+        $style !== "calendar-month" &&
+        cib_civievent_parse_bool($atts, "past_only", false);
 
     $empty_message =
         isset($atts["empty_message"]) && $atts["empty_message"] !== ""
             ? sanitize_text_field($atts["empty_message"])
-            : __("No upcoming events.", "cib-civievent-widget");
+            : ($past_only
+                ? __("No past events.", "cib-civievent-widget")
+                : __("No upcoming events.", "cib-civievent-widget"));
     $image_field_label = !empty($atts["image_field"])
         ? sanitize_text_field($atts["image_field"])
         : "cibapp_Image_Link";
@@ -157,6 +168,7 @@ function civievent_widget_shortcode($atts, $content = null)
             $limit,
             $upcoming_only,
             $event_type_id,
+            $past_only,
         );
     } catch (\CRM_Core_Exception $e) {
         CRM_Core_Error::debug_log_message(
