@@ -2,6 +2,7 @@
 
 = 5.3.0 =
 * Shortcode attribute **`past_only`**: `past_only="1"` lists only events that started before today, most recent first. Use a second `[civievent_widget]` with it for a standalone "Past events" section beneath an upcoming list -- `upcoming_only="0"` merges past and upcoming into one ascending list and cannot produce a separate section. Takes precedence over `upcoming_only`; ignored for `style="calendar-month"`, where `upcoming_only="0"` is still the way to browse prior months. The default empty message becomes "No past events."
+* **Fix:** Hide register links when the event has ended and no registration end date is set (matches CiviCRM `validRegistrationDate` on Event Info).
 
 = 5.2.2 =
 * **Fix:** `upcoming_only="0"` loads the most recent past and nearest future events (split queries + `limit`) instead of the oldest rows in the database. No separate date-window shortcode attributes — control volume with **`limit`** only.
